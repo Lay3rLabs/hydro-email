@@ -1,0 +1,168 @@
+# This is mostly just a convenience to start common tasks from the root directory
+version: "3"
+
+silent: true
+
+dotenv: [".env"]
+
+vars:
+  #WAVS_DOCKER_IMAGE: 'ghcr.io/lay3rlabs/wavs:latest{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  WAVS_DOCKER_IMAGE: "wavs:local"
+  GREENMAIL_DOCKER_IMAGE: "greenmail/standalone:latest"
+  REPO_ROOT:
+    # find the root directory of the repository by looking for the `.git` directory.
+    sh: git rev-parse --show-toplevel
+  DOCKER_SUDO:
+    sh: |
+      if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+        echo ""
+      else
+        echo "sudo"
+      fi
+  BUILDS_PATH: '{{joinPath .REPO_ROOT "builds"}}'
+  WIT_DEFINITIONS_PATH: '{{joinPath .REPO_ROOT "wit-definitions"}}'
+  WAVS_HOME_PATH: '{{joinPath .REPO_ROOT "wavs-home"}}'
+  TEMP_CLONE_PATH: '{{joinPath .REPO_ROOT ".temp-clone"}}'
+  WAVS_WIT_BRANCH: "tls-and-sockets"
+  COMPONENT_FILENAME: "wavs_imap_component.wasm"
+
+tasks:
+  default:
+    cmds:
+      - task --list-all
+
+  clean:
+    desc: "Clean all builds"
+    cmds:
+      - echo "Cleaning builds in {{.BUILDS_PATH}}"
+      - rm -rf "{{.BUILDS_PATH}}"
+
+  lint:
+    desc: "Run code formatting and linting checks"
+    cmds:
+      - cargo fmt --all -- --check
+      - cargo fix --allow-dirty --allow-staged
+      - cargo clippy --all-targets -- -D warnings
+
+  docker-pull:
+    desc: "Pull required Docker images"
+    cmds:
+      - |
+        {{.DOCKER_SUDO}} docker pull {{.WAVS_DOCKER_IMAGE}}
+      - |
+        {{.DOCKER_SUDO}} docker pull {{.GREENMAIL_DOCKER_IMAGE}}
+
+  build:
+    cmds:
+      - echo "Building component"
+      - cargo build --target wasm32-wasip2
+      - mkdir -p "{{.BUILDS_PATH}}"
+      - cp "./target/wasm32-wasip2/debug/{{.COMPONENT_FILENAME}}" "{{.BUILDS_PATH}}/"
+
+  build-release:
+    cmds:
+      - echo "Building component"
+      - cargo build --release --target wasm32-wasip2
+      - mkdir -p "{{.BUILDS_PATH}}"
+      - cp "./target/wasm32-wasip2/release/{{.COMPONENT_FILENAME}}" "{{.BUILDS_PATH}}/"
+
+  clean-wit:
+    cmds:
+      - echo "Cleaning WIT"
+      - rm -rf "wit-worlds"
+
+  fetch-wit:
+    cmds:
+      - task: download-wit
+      - cd "{{.WIT_DEFINITIONS_PATH}}/operator" && wkg wit fetch
+
+  download-wit:
+    internal: true
+    deps: [clean-wit]
+    vars:
+      BRANCH: "{{default .WAVS_WIT_BRANCH .BRANCH}}"
+    cmds:
+      - echo "Downloading WIT worlds from {{.BRANCH}} branch"
+      - rm -rf "{{.TEMP_CLONE_PATH}}"
+      - mkdir -p "{{.TEMP_CLONE_PATH}}"
+      - rm -rf "{{.WIT_DEFINITIONS_PATH}}"
+      - mkdir -p "{{.WIT_DEFINITIONS_PATH}}"
+      - git -C "{{.TEMP_CLONE_PATH}}" clone --depth=1 --branch {{.BRANCH}} --single-branch https://github.com/Lay3rLabs/wavs-wasi.git
+      - cp -R "{{.TEMP_CLONE_PATH}}"/wavs-wasi/wit-definitions/* "{{.WIT_DEFINITIONS_PATH}}/"
+      - rm -rf "{{.TEMP_CLONE_PATH}}"
+
+  exec-docker:
+    cmds:
+      - echo "Executing component from {{.COMPONENT_FILE}}"
+      - >
+        docker run --rm
+        --network host
+        -v "{{.WAVS_HOME_PATH}}":/wavs-home:ro
+        -v "{{.BUILDS_PATH}}":/builds:ro
+        --env-file "{{joinPath .REPO_ROOT ".env"}}"
+        -e WAVS_HOME="/wavs-home"
+        {{.WAVS_DOCKER_IMAGE}}
+        wavs-cli exec
+        --log-level '{{.RUST_LOG | default "info"}}'
+        --component "/builds/{{.COMPONENT_FILENAME}}"
+        --input "read-mail"
+
+  exec-local:
+    cmds:
+      - echo "Executing component from {{.COMPONENT_FILE}}"
+      - >
+        cd ../wavs/packages/cli && RUST_BACKTRACE=1 cargo run
+        exec
+        --log-level '{{.RUST_LOG | default "info"}}'
+        --component "/{{.BUILDS_PATH}}/{{.COMPONENT_FILENAME}}"
+        --input "read-mail"
+
+  watch:
+    watch: true
+    sources:
+      - "src/**/*.rs"
+      - "Cargo.toml"
+      - "Cargo.lock"
+    cmds:
+      - task: build
+      - task: exec
+
+  mail-server-start:
+    desc: "Start imap server"
+    # ports listed at
+    # https://greenmail-mail-test.github.io/greenmail/#deploy_docker_standalone
+    vars:
+      IMAP_PORT:
+        sh: echo "${WAVS_ENV_IMAP_PORT:-993}"
+    cmds:
+      - >
+        {{.DOCKER_SUDO}} docker run -d
+        --name mail-server-local
+        -p 3993:3993
+        -p 3025:3025
+        -p 3143:3143
+        {{.GREENMAIL_DOCKER_IMAGE}}
+
+  mail-server-stop:
+    desc: "Stop imap server"
+    cmds:
+      - |
+        {{.DOCKER_SUDO}} docker kill mail-server-local || true
+      - |
+        {{.DOCKER_SUDO}} docker rm mail-server-local || true
+
+  mail-server-restart:
+    desc: "Restart imap server"
+    cmds:
+      - task: mail-server-stop
+      - task: mail-server-start
+
+  mail-server-send:
+    vars:
+      USERNAME:
+        sh: echo "${WAVS_ENV_IMAP_USERNAME}"
+      MSG: '{{.MSG | default "Hello, World!"}}'
+    cmds:
+      - |
+        printf "EHLO localhost\r\nMAIL FROM:<sender@example.com>\r\nRCPT TO:<{{.USERNAME}}>\r\nDATA\r\nSubject: Test email via GreenMail\r\nFrom: sender@example.com\r\nTo: {{.USERNAME}}\r\n\r\n{{.MSG}}\r\n.\r\nQUIT\r\n" \
+        | nc localhost 3025

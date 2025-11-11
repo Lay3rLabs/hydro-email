@@ -1,0 +1,47 @@
+[package]
+name = "wavs-imap-component"
+edition = "2021"
+version = "0.0.1"
+license = "GPL-3.0-or-later"
+authors = ["Layer Labs (Cayman)"]
+repository = "https://github.com/Lay3rLabs/telegram-payments.git"
+rust-version = "1.90.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+
+# Error handling
+anyhow = "1.0.98"
+thiserror = "2.0.12"
+
+# WAVS
+wavs-wasi-utils = "2.0.0"
+wavs-types = { version = "=2.0.0-rc.3", default-features = false, features = [
+  "cosmwasm",
+] }
+
+# WASI
+wstd = "0.6.3"
+wit-bindgen-rt = "0.44.0"
+wit-bindgen = "0.47.0"
+wasip2 = "1.0.1"
+
+# Serialization
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.142"
+
+# Async
+futures = "0.3.31"
+
+# Email
+imap = {version = "2.4.1", default-features = false}
+imap-proto = "0.16.6"
+mail-parser = "0.11.1"
+
+# Security
+zeroize = "1.8.2"
+
+# Misc
+cfg-if = "1.0.4"
