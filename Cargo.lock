@@ -4658,6 +4658,7 @@ dependencies = [
  "mail-parser",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "thiserror 2.0.17",
  "wasip2",
  "wavs-types",
