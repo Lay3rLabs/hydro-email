@@ -26,4 +26,7 @@ pub enum AppError {
 
     #[error("{0:?}")]
     MessageParse(anyhow::Error),
+
+    #[error("Authorization: {0:?}")]
+    Auth(anyhow::Error),
 }

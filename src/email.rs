@@ -8,7 +8,7 @@ use thiserror::Error;
 use crate::{
     config::{ImapConfig, DEBUG},
     connection::{Connection, ConnectionError},
-    email::parser::EmailMessage,
+    email::{auth::auth_session, parser::EmailMessage},
     error::{AppError, AppResult},
 };
 
@@ -30,9 +30,7 @@ pub async fn read_next_email() -> AppResult<Option<EmailMessage>> {
         println!("Imap greeting: {greeting}");
     }
 
-    let mut session = client
-        .login(&config.username, &config.password)
-        .map_err(|(e, _)| e)?;
+    let mut session = auth_session(client, &config).await?;
 
     if DEBUG.print_capabilities {
         for capability in session.capabilities()?.iter() {

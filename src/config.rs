@@ -5,6 +5,28 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::error::{AppError, AppResult};
 
+#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
+pub struct ImapConfig {
+    pub host: String,
+    pub port: u16,
+    pub tls: bool,
+    pub credentials: ImapCredentials,
+}
+
+#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
+pub enum ImapCredentials {
+    Plain {
+        username: String,
+        password: String,
+    },
+
+    Gmail {
+        client_id: String,
+        client_secret: String,
+        refresh_token: String,
+    },
+}
+
 #[derive(Default)]
 pub struct DebugSettings {
     pub print_greeting: bool,
@@ -24,22 +46,6 @@ pub static DEBUG: LazyLock<DebugSettings> = LazyLock::new(|| {
     settings
 });
 
-#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
-pub struct ImapConfig {
-    pub host: String,
-    pub port: u16,
-    pub tls: bool,
-    pub username: String,
-    pub password: String,
-    pub credential_kind: ImapCredentialKind,
-}
-
-#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
-pub enum ImapCredentialKind {
-    Plain,
-    OAuth2,
-}
-
 impl std::fmt::Display for ImapConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}:{} (TLS: {})", self.host, self.port, self.tls)
@@ -48,12 +54,34 @@ impl std::fmt::Display for ImapConfig {
 
 impl ImapConfig {
     pub fn new() -> AppResult<Self> {
+        let credential_kind = get_env_var("WAVS_ENV_IMAP_CREDENTIAL_KIND")?;
+        let credentials = match credential_kind.to_lowercase().as_str() {
+            "plain" => {
+                let username = get_env_var("WAVS_ENV_IMAP_USERNAME")?;
+                let password = get_env_var("WAVS_ENV_IMAP_PASSWORD")?;
+                ImapCredentials::Plain { username, password }
+            }
+            "gmail" => {
+                let client_id = get_env_var("WAVS_ENV_GMAIL_CLIENT_ID")?;
+                let client_secret = get_env_var("WAVS_ENV_GMAIL_CLIENT_SECRET")?;
+                let refresh_token = get_env_var("WAVS_ENV_GMAIL_TOKEN")?;
+                ImapCredentials::Gmail {
+                    client_id,
+                    client_secret,
+                    refresh_token,
+                }
+            }
+            _ => {
+                return Err(AppError::InvalidEnv {
+                    key: "WAVS_ENV_IMAP_CREDENTIAL_KIND",
+                    reason: "Not a valid credential kind (expected 'plain' or 'gmail')",
+                })
+            }
+        };
+
         let host = get_env_var("WAVS_ENV_IMAP_HOST")?;
         let port = get_env_var("WAVS_ENV_IMAP_PORT")?;
         let tls = get_env_var("WAVS_ENV_IMAP_TLS")?;
-        let username = get_env_var("WAVS_ENV_IMAP_USERNAME")?;
-        let password = get_env_var("WAVS_ENV_IMAP_PASSWORD")?;
-        let credential_kind = get_env_var("WAVS_ENV_IMAP_CREDENTIAL_KIND")?;
 
         let port: u16 = port.parse().map_err(|_| AppError::InvalidEnv {
             key: "WAVS_ENV_IMAP_PORT",
@@ -71,24 +99,11 @@ impl ImapConfig {
             }
         };
 
-        let credential_kind = match credential_kind.to_lowercase().as_str() {
-            "plain" => ImapCredentialKind::Plain,
-            "oauth2" => ImapCredentialKind::OAuth2,
-            _ => {
-                return Err(AppError::InvalidEnv {
-                    key: "WAVS_ENV_IMAP_CREDENTIAL_KIND",
-                    reason: "Not a valid credential kind (expected 'plain' or 'oauth2')",
-                })
-            }
-        };
-
         Ok(ImapConfig {
             host: host.to_string(),
             port,
             tls,
-            username: username.to_string(),
-            password: password.to_string(),
-            credential_kind,
+            credentials,
         })
     }
 }
