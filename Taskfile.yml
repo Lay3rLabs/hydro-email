@@ -28,7 +28,8 @@ vars:
   # OAuth endpoints for Gmail
   OAUTH_AUTH_URL: https://accounts.google.com/o/oauth2/v2/auth
   OAUTH_TOKEN_URL: https://oauth2.googleapis.com/token
-  GMAIL_SCOPE: https://mail.google.com/
+  # Gmail OAuth scope (can be overridden in .env or via CLI)
+  GMAIL_SCOPE: "https://mail.google.com/"
 
 tasks:
   default:
@@ -95,7 +96,7 @@ tasks:
       - cp -R "{{.TEMP_CLONE_PATH}}"/wavs-wasi/wit-definitions/* "{{.WIT_DEFINITIONS_PATH}}/"
       - rm -rf "{{.TEMP_CLONE_PATH}}"
 
-  exec-docker:
+  exec:
     cmds:
       - echo "Executing component from {{.COMPONENT_FILE}}"
       - >
