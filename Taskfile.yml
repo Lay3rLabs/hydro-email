@@ -6,8 +6,8 @@ silent: true
 dotenv: [".env"]
 
 vars:
-  #WAVS_DOCKER_IMAGE: 'ghcr.io/lay3rlabs/wavs:latest{{if eq .ARCH "arm64"}}-arm64{{end}}'
-  WAVS_DOCKER_IMAGE: "wavs:local"
+  WAVS_DOCKER_IMAGE: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.4{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  #WAVS_DOCKER_IMAGE: "wavs:local"
   GREENMAIL_DOCKER_IMAGE: "greenmail/standalone:latest"
   REPO_ROOT:
     # find the root directory of the repository by looking for the `.git` directory.
@@ -23,7 +23,7 @@ vars:
   WIT_DEFINITIONS_PATH: '{{joinPath .REPO_ROOT "wit-definitions"}}'
   WAVS_HOME_PATH: '{{joinPath .REPO_ROOT "wavs-home"}}'
   TEMP_CLONE_PATH: '{{joinPath .REPO_ROOT ".temp-clone"}}'
-  WAVS_WIT_BRANCH: "tls-and-sockets"
+  WAVS_WIT_BRANCH: "main"
   COMPONENT_FILENAME: "wavs_imap_component.wasm"
   # OAuth endpoints for Gmail
   OAUTH_AUTH_URL: https://accounts.google.com/o/oauth2/v2/auth
