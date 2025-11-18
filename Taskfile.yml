@@ -28,8 +28,9 @@ vars:
   # OAuth endpoints for Gmail
   OAUTH_AUTH_URL: https://accounts.google.com/o/oauth2/v2/auth
   OAUTH_TOKEN_URL: https://oauth2.googleapis.com/token
-  # Gmail OAuth scope (can be overridden in .env or via CLI)
-  GMAIL_SCOPE: "https://mail.google.com/"
+  # Gmail OAuth scopes (can be overridden in .env or via CLI)
+  # Space-separated list of scopes as per OAuth2 spec
+  GMAIL_SCOPE: "https://mail.google.com/ https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify"
 
 tasks:
   default:
