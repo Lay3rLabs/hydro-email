@@ -1,5 +1,6 @@
 mod auth;
 mod parser;
+pub mod verify;
 
 use futures::StreamExt;
 use imap::Session;
@@ -59,6 +60,6 @@ pub async fn read_next_email() -> AppResult<Option<EmailMessage>> {
         .ok_or(AppError::FailedToFetchEmail(latest_uid))?;
 
     Ok(Some(
-        EmailMessage::parse(&fetch).map_err(AppError::MessageParse)?,
+        EmailMessage::parse(&fetch).map_err(AppError::AnyMessageParse)?,
     ))
 }
