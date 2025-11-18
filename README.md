@@ -1,5 +1,7 @@
 # Imap component
 
+This uses DKIM verification from our fork of Cloudflare's DKIM library: https://github.com/Lay3rLabs/dkim-wasi
+
 ## Getting Started
 
 1. Set your credentials

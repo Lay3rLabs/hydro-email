@@ -38,11 +38,17 @@ futures = "0.3.31"
 
 # Email
 imap = {version = "2.4.1", default-features = false}
-imap-proto = "0.16.6"
-mail-parser = "0.11.1"
+mailparse = "0.16.1"
+cfdkim = { git = "https://github.com/Lay3rLabs/dkim-wasi.git", features = ["wasi-resolver"]}
 
 # Security
 zeroize = "1.8.2"
 
 # Misc
 cfg-if = "1.0.4"
+
+# Logging
+sloggers = "2.2.0"
+
+[dev-dependencies]
+tokio = {version = "1.48.0", features = ["full"]}
