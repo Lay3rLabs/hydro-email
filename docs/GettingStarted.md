@@ -3,12 +3,12 @@
 1. The usual stuff (Rust, Docker, NPM, etc.)
 2. [Taskfile](https://taskfile.dev/installation)
 3. [Install and configure wkg to pull from wa.dev](https://crates.io/crates/wkg)
-4. Copy `.example.env` to `.env` and replace the values
-5. Make sure you have `wasm32-wasip2` target installed: `rustup target add wasm32-wasip2`
-6. Install any `http-server` command that takes `-p <port>` as an argument (for example, `http-server` from cargo)
-7. Download the latest WIT definitions: `task components:fetch-wit`
-8. Make sure you've pulled all the docker images: `task docker-pull`
-
+4. Make sure you've pulled all the docker images: `task docker-pull`
+5. Install any `http-server` command that takes `-p <port>` as an argument (for example, `http-server` from cargo)
+6. Make sure you have `wasm32-wasip2` target installed: `rustup target add wasm32-wasip2`
+7. Build the helper binary: `task build-helper` (this will take a while for the first time)
+8. Download the latest WIT definitions: `task components:fetch-wit`
+9. Copy `.example.env` to `.env` and replace the values
 
 ## Summary
 

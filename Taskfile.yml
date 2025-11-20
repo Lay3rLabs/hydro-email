@@ -12,7 +12,7 @@ includes:
   backend: ./taskfile/backend.yml
   test: ./taskfile/test.yml
   oauth: ./taskfile/oauth.yml
-  # deploy: ./taskfile/deploy.yml
+  deploy: ./taskfile/deploy.yml
 
 tasks:
   default:
@@ -31,6 +31,10 @@ tasks:
       - cargo fmt --all -- --check
       - cargo fix --allow-dirty --allow-staged
       - cargo clippy --all-targets -- -D warnings
+
+  build-helper:
+    cmds:
+      - cargo build --release --package task-helper
 
   docker-pull:
     desc: "Pull required Docker images"
@@ -56,3 +60,16 @@ tasks:
       - task components:build-all
       - task contracts:build-all
       - task contracts:schema-all
+
+  ###################################################################
+  ######################## HELPER ###################################
+  ###################################################################
+
+  helper-exec:
+    cmds:
+      - |
+        if [ "{{.TASK_HELPER_DEV_MODE}}" = "true" ]; then
+          cd {{.PATH_REPO_ROOT}}/packages/task-helper && cargo run -- {{.CLI_ARGS}}
+        else
+          {{.PATH_REPO_ROOT}}/target/release/task-helper {{.CLI_ARGS}}
+        fi

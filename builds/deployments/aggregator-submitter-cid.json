@@ -1,0 +1,8 @@
+{
+  "kind": "aggregator",
+  "component": "submitter",
+  "digest": "6201843a0ad3da878d0db9acdcc85d1510bedbc1c72f71a6f9b0269ddf1a251c",
+  "cid": "bafybeihtqvwv34d23fs7d74y7bfdmb7wx6wruvo2pvhisisrvrnatqoy5i",
+  "uri": "ipfs://bafybeihtqvwv34d23fs7d74y7bfdmb7wx6wruvo2pvhisisrvrnatqoy5i/aggregator-submitter.wasm",
+  "gateway_url": "http://127.0.0.1:8301/ipfs/bafybeihtqvwv34d23fs7d74y7bfdmb7wx6wruvo2pvhisisrvrnatqoy5i/aggregator-submitter.wasm"
+}

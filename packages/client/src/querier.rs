@@ -8,8 +8,9 @@ use crate::address::AnyAddr;
 cfg_if::cfg_if! {
     if #[cfg(feature = "multitest")] {
         use cw_multi_test::App;
-        use std::sync::Arc;
-        type AppWrapper = Arc<std::sync::Mutex<App>>;
+        use std::rc::Rc;
+        use std::cell::RefCell;
+        type AppWrapper = Rc<RefCell<App>>;
     }
 }
 
@@ -61,8 +62,7 @@ impl AnyQuerier {
             }
             #[cfg(feature = "multitest")]
             Self::MultiTest(app) => Ok(app
-                .lock()
-                .unwrap()
+                .borrow()
                 .wrap()
                 .query_wasm_smart(address.to_string(), msg)
                 .map_err(|e| anyhow::anyhow!("{e:?}"))?),
