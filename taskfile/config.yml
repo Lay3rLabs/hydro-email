@@ -10,6 +10,7 @@ vars:
   PATH_COMPONENT_BUILDS: '{{joinPath .PATH_BUILDS "components"}}'
   PATH_CONTRACT_BUILDS: '{{joinPath .PATH_BUILDS "contracts"}}'
   PATH_CONTRACT_SCHEMA: '{{joinPath .PATH_BUILDS "contract-schemas"}}'
+  PATH_DEPLOYMENTS: '{{joinPath .PATH_REPO_ROOT ".deployments"}}'
   PATH_BACKEND: '{{joinPath .PATH_REPO_ROOT "backend"}}'
   PATH_WAVS_HOME: '{{joinPath .PATH_BACKEND "wavs-home"}}'
   PATH_DOCKER_FILES: '{{joinPath .PATH_BACKEND "docker"}}'
@@ -48,6 +49,14 @@ vars:
   PORT_JAEGER_UI: 16686
   PORT_PROMETHEUS_UI: 9092
 
+  # Deployment chain
+  CHAIN_KEY: "cosmos:pion-1"
+
+  # Middleware
+  DEFAULT_MIDDLEWARE_THRESHOLD: 100
+  DEFAULT_MIDDLEWARE_SIGNER_WEIGHT: 100
+  DEFAULT_MIDDLEWARE_STRATEGIES: "test_strategy_1=100 test_strategy_2=200"
+
   # Timeouts
   TIMEOUT_HEALTH_CHECK: 5 # seconds to wait for service health checks
 
@@ -59,3 +68,4 @@ vars:
       else
         echo "sudo"
       fi
+  TASK_HELPER_DEV_MODE: "true" # If not "true", uses the built version of the task-helper binary

@@ -7,8 +7,9 @@ use crate::address::AnyAddr;
 cfg_if::cfg_if! {
     if #[cfg(feature = "multitest")] {
         use cw_multi_test::{App, Executor};
-        use std::sync::Arc;
-        type AppWrapper = Arc<std::sync::Mutex<App>>;
+        use std::rc::Rc;
+        use std::cell::RefCell;
+        type AppWrapper = Rc<RefCell<App>>;
     }
 }
 
@@ -85,8 +86,7 @@ impl AnyExecutor {
             }
             #[cfg(feature = "multitest")]
             Self::MultiTest { app, admin } => Ok(app
-                .lock()
-                .unwrap()
+                .borrow_mut()
                 .execute_contract(admin.clone(), address.into(), msg, funds)
                 .map(AnyTxResponse::MultiTest)
                 .map_err(|e| anyhow::anyhow!("{e:?}"))?),

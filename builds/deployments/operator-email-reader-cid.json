@@ -1,0 +1,8 @@
+{
+  "kind": "operator",
+  "component": "email-reader",
+  "digest": "ec13bca23fcaf5b7a6355f7332a88893e410b50f3632fec5e3e64133222bdf75",
+  "cid": "bafybeieu572bmqlfkl2slb3ztnre46ormm4bqk37n64pqhcsawiduv2pcq",
+  "uri": "ipfs://bafybeieu572bmqlfkl2slb3ztnre46ormm4bqk37n64pqhcsawiduv2pcq/operator-email-reader.wasm",
+  "gateway_url": "http://127.0.0.1:8301/ipfs/bafybeieu572bmqlfkl2slb3ztnre46ormm4bqk37n64pqhcsawiduv2pcq/operator-email-reader.wasm"
+}

@@ -1,7 +1,7 @@
 //! Abstraction specifically for the off-chain multi-test environment
 pub mod service_handler;
 use app_client::{executor::AnyExecutor, querier::AnyQuerier};
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc};
 
 use cosmwasm_std::{Addr, Coin};
 use cw_multi_test::App;
@@ -14,7 +14,7 @@ pub struct AppClient {
 
 impl AppClient {
     pub fn new(admin: &str) -> Self {
-        let app = Arc::new(std::sync::Mutex::new(App::new(|router, api, storage| {
+        let app = Rc::new(RefCell::new(App::new(|router, api, storage| {
             router
                 .bank
                 .init_balance(
@@ -28,7 +28,7 @@ impl AppClient {
                 .unwrap();
         })));
 
-        let admin = app.lock().unwrap().api().addr_make(admin);
+        let admin = app.borrow().api().addr_make(admin);
 
         Self {
             querier: app.clone().into(),
@@ -38,19 +38,19 @@ impl AppClient {
 
     pub fn with_app<T>(&self, f: impl FnOnce(&App) -> T) -> T {
         match &self.executor {
-            AnyExecutor::MultiTest { app, .. } => f(&app.lock().unwrap()),
+            AnyExecutor::MultiTest { app, .. } => f(&app.borrow()),
             _ => unreachable!(),
         }
     }
 
     pub fn with_app_mut<T>(&self, f: impl FnOnce(&mut App) -> T) -> T {
         match &self.executor {
-            AnyExecutor::MultiTest { app, .. } => f(&mut app.lock().unwrap()),
+            AnyExecutor::MultiTest { app, .. } => f(&mut app.borrow_mut()),
             _ => unreachable!(),
         }
     }
 
-    pub fn clone_app(&self) -> Arc<std::sync::Mutex<App>> {
+    pub fn clone_app(&self) -> Rc<RefCell<App>> {
         match &self.executor {
             AnyExecutor::MultiTest { app, .. } => app.clone(),
             _ => unreachable!(),

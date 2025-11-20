@@ -1,0 +1,242 @@
+version: "3"
+
+includes:
+  config:
+    taskfile: ./config.yml
+    flatten: true
+
+tasks:
+  ### CLEANING TASKS
+  clean:
+    cmds:
+      - rm -rf "{{.PATH_DEPLOYMENTS}}"
+
+  ###################################################################
+  ######################## ALL  #####################################
+  ###################################################################
+
+  all:
+    deps: [all-upload-contracts, all-upload-components]
+    cmds:
+      - task: middleware-instantiate
+        vars:
+          MANAGER_CODE_ID:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/service-manager-code-id.json" | jq -r '.code_id'
+          REGISTRY_CODE_ID:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/stake-registry-code-id.json" | jq -r '.code_id'
+          FILENAME: middleware.json
+
+  ###################################################################
+  ######################## MIDDLEWARE ###############################
+  ###################################################################
+
+  middleware-service-manager-upload:
+    deps: [assert-account-exists]
+    requires:
+      vars: [FILENAME]
+    cmds:
+      - echo "🚀 Uploading middleware service-manager contract..."
+      - mkdir -p "{{.PATH_DEPLOYMENTS}}"
+      - >
+        docker run --rm
+        --network host
+        -v "{{.PATH_WAVS_HOME}}":/wavs-home:ro
+        -v "{{.PATH_DEPLOYMENTS}}":/output
+        -e CHAIN_KEY="{{.CHAIN_KEY}}"
+        -e WAVS_HOME="/wavs-home"
+        -e CLI_MNEMONIC="{{.CLI_MNEMONIC}}"
+        {{.DOCKER_IMAGE_WAVS_CW_MIDDLEWARE}}
+        service-manager upload --contract-kind mirror
+        --output-path "/output/{{.FILENAME}}"
+
+  middleware-stake-registry-upload:
+    deps: [assert-account-exists]
+    requires:
+      vars: [FILENAME]
+    cmds:
+      - echo "🚀 Uploading middleware stake-registry contract..."
+      - mkdir -p "{{.PATH_DEPLOYMENTS}}"
+      - >
+        docker run --rm
+        --network host
+        -v "{{.PATH_WAVS_HOME}}":/wavs-home:ro
+        -v "{{.PATH_DEPLOYMENTS}}":/output
+        -e CHAIN_KEY="{{.CHAIN_KEY}}"
+        -e WAVS_HOME="/wavs-home"
+        -e CLI_MNEMONIC="{{.CLI_MNEMONIC}}"
+        {{.DOCKER_IMAGE_WAVS_CW_MIDDLEWARE}}
+        registry upload --contract-kind mirror_stake
+        --output-path "/output/{{.FILENAME}}"
+
+  middleware-instantiate:
+    deps: [assert-account-exists]
+    requires:
+      vars: [MANAGER_CODE_ID, REGISTRY_CODE_ID, FILENAME]
+    vars:
+      THRESHOLD: "{{.THRESHOLD | default .DEFAULT_MIDDLEWARE_THRESHOLD}}"
+      STRATEGIES: "{{.STRATEGIES | default .DEFAULT_MIDDLEWARE_STRATEGIES}}"
+    cmds:
+      - echo "🚀 Instantiating middleware contracts..."
+      - mkdir -p "{{.PATH_DEPLOYMENTS}}"
+      - >
+        docker run --rm
+        --network host
+        -v "{{.PATH_WAVS_HOME}}":/wavs-home:ro
+        -v "{{.PATH_DEPLOYMENTS}}":/output
+        -e CHAIN_KEY="{{.CHAIN_KEY}}"
+        -e WAVS_HOME="/wavs-home"
+        -e CLI_MNEMONIC="{{.CLI_MNEMONIC}}"
+        {{.DOCKER_IMAGE_WAVS_CW_MIDDLEWARE}}
+        registry instantiate-mirror-stake
+        --code-id {{.REGISTRY_CODE_ID}}
+        --service-manager-code-id {{.MANAGER_CODE_ID}}
+        --threshold-weight {{.THRESHOLD}}
+        --strategy {{.STRATEGIES}}
+        --output-path "/output/{{.FILENAME}}"
+
+  ###################################################################
+  ################### OPERATOR / STAKE REGISTRY #####################
+  ###################################################################
+  operator-set-signing-key:
+    requires:
+      vars: [FILENAME]
+    vars:
+      OPERATORS_RANGE:
+        sh: seq 1 {{.OPERATORS | default "1"}}
+    cmds:
+      - for: { var: OPERATORS_RANGE }
+        task: operator-set-signing-key-{{.ITEM}}
+        vars:
+          WEIGHT: "{{.WEIGHT}}"
+          FILENAME: "{{.FILENAME}}"
+
+  operator-set-signing-key-*:
+    deps: [assert-account-exists]
+    requires:
+      vars: [WEIGHT, FILENAME]
+    vars:
+      WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+      OPERATOR_MNEMONIC:
+        sh: task backend:get-wavs-operator-mnemonic-{{.WAVS_INSTANCE}}
+      EVM_OPERATOR_ADDRESS:
+        sh: cast wallet address --mnemonic "{{.OPERATOR_MNEMONIC}}"
+      SERVICE_MANAGER_ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/middleware.json" | jq -r '.service_manager_address'
+      STAKE_REGISTRY_ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/middleware.json" | jq -r '.registry_address'
+      WAVS_PORT:
+        sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
+      WAVS_URL: "http://127.0.0.1:{{.WAVS_PORT}}"
+    cmds:
+      - echo "🚀 Setting signing key on service manager {{.SERVICE_MANAGER_ADDRESS}}..."
+      - >
+        cd packages/cli && cargo run operator-set-signing-key
+        --wavs-instance={{.WAVS_INSTANCE}}
+        --output-filename={{.FILENAME}}
+        --service-manager-address={{.SERVICE_MANAGER_ADDRESS}}
+        --stake-registry-address={{.STAKE_REGISTRY_ADDRESS}}
+        --evm-operator-address={{.EVM_OPERATOR_ADDRESS}}
+        --wavs-url={{.WAVS_URL}}
+        --weight={{.WEIGHT}}
+
+  ###################################################################
+  ######################## CONTRACTS #################################
+  ###################################################################
+  all-upload-contracts:
+    vars:
+      SKIP_UPLOAD_CONTRACTS: '{{ .SKIP_UPLOAD_CONTRACTS | default "false" }}'
+    status:
+      - '[ "{{.SKIP_UPLOAD_CONTRACTS}}" = "true" ]'
+    cmds:
+      - task: middleware-service-manager-upload
+        vars:
+          FILENAME: service-manager-code-id.json
+      - task: middleware-stake-registry-upload
+        vars:
+          FILENAME: stake-registry-code-id.json
+      - task: contract-upload
+        vars:
+          CONTRACT: service-handler
+          FILENAME: service-handler-code-id.json
+
+  contract-upload:
+    deps: [assert-account-exists]
+    requires:
+      vars: [CONTRACT, FILENAME]
+    cmds:
+      - echo "🚀 Uploading contract {{.CONTRACT}}..."
+      - task helper-exec -- upload-contract --kind {{.CONTRACT}} --output-filename={{.FILENAME}}
+
+  contract-instantiate-service-handler:
+    deps: [assert-account-exists]
+    requires:
+      vars: [FILENAME, CODE_ID]
+    vars:
+      AUTH_ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/middleware.json" | jq -r '.service_manager_address'
+      AUTH_KIND: "service_manager"
+    cmds:
+      - echo "🚀 Instantiating Service Handler contract..."
+      - task helper-exec -- instantiate-service-handler --output-filename={{.FILENAME}} --code-id={{.CODE_ID}} --auth-address={{.AUTH_ADDRESS}} --auth-kind={{.AUTH_KIND}}
+
+  ###################################################################
+  ######################## COMPONENTS ###############################
+  ###################################################################
+  all-upload-components:
+    vars:
+      SKIP_UPLOAD_COMPONENTS: '{{ .SKIP_UPLOAD_COMPONENTS | default "false" }}'
+    status:
+      - '[ "{{.SKIP_UPLOAD_COMPONENTS}}" = "true" ]'
+    cmds:
+      - task: component-upload
+        vars:
+          COMPONENT: email-reader
+          KIND: operator
+          FILENAME: operator-email-reader-cid.json
+      - task: component-upload
+        vars:
+          COMPONENT: submitter
+          KIND: aggregator
+          FILENAME: aggregator-submitter-cid.json
+
+  component-upload:
+    requires:
+      vars: [COMPONENT, KIND, FILENAME]
+    vars:
+      IPFS_API_URL: "http://127.0.0.1:{{.PORT_IPFS_API}}"
+      IPFS_GATEWAY_URL: "http://127.0.0.1:{{.PORT_IPFS_GATEWAY}}"
+    cmds:
+      - echo "🚀 Uploading component {{.COMPONENT}} to IPFS..."
+      - task helper-exec -- upload-component --kind {{.KIND}} --component {{.COMPONENT}} --output-filename={{.FILENAME}} --ipfs-api-url {{.IPFS_API_URL}} --ipfs-gateway-url {{.IPFS_GATEWAY_URL}}
+
+  ###################################################################
+  ######################## FAUCET   #################################
+  ###################################################################
+
+  tap-faucet:
+    cmds:
+      - task: inner-tap-faucet
+        vars:
+          MNEMONIC: "CLI_MNEMONIC"
+
+  tap-faucet-all:
+    cmds:
+      - for: { var: ALL_MNEMONICS_TO_FUND }
+        task: inner-tap-faucet
+        vars:
+          MNEMONIC: "{{.ITEM}}"
+
+  inner-tap-faucet:
+    internal: true
+    vars:
+      MNEMONIC_VALUE:
+        sh: echo "${{.MNEMONIC}}"
+    env:
+      CLI_MNEMONIC: "{{.MNEMONIC_VALUE}}"
+    cmds:
+      - task helper-exec -- faucet-tap
+
+  assert-account-exists:
+    cmds:
+      - task helper-exec -- assert-account-exists

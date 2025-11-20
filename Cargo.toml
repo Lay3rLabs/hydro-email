@@ -10,7 +10,7 @@ members = [
     "packages/tests/off-chain",
     "packages/tests/on-chain",
     "packages/tests/common",
-    # "packages/cli",
+    "packages/task-helper",
 ]
 
 resolver = "2"
