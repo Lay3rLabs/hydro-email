@@ -1,0 +1,61 @@
+version: "3"
+
+vars:
+  # Paths
+  PATH_REPO_ROOT:
+    sh: git rev-parse --show-toplevel
+  PATH_BUILDS: '{{joinPath .PATH_REPO_ROOT ".builds"}}'
+  PATH_WIT_DEFINITIONS: '{{joinPath .PATH_REPO_ROOT "wit-definitions"}}'
+  PATH_TEMP_CLONE: '{{joinPath .PATH_REPO_ROOT ".temp-clone"}}'
+  PATH_COMPONENT_BUILDS: '{{joinPath .PATH_BUILDS "components"}}'
+  PATH_CONTRACT_BUILDS: '{{joinPath .PATH_BUILDS "contracts"}}'
+  PATH_CONTRACT_SCHEMA: '{{joinPath .PATH_BUILDS "contract-schemas"}}'
+  PATH_BACKEND: '{{joinPath .PATH_REPO_ROOT "backend"}}'
+  PATH_WAVS_HOME: '{{joinPath .PATH_BACKEND "wavs-home"}}'
+  PATH_DOCKER_FILES: '{{joinPath .PATH_BACKEND "docker"}}'
+  PATH_CHAINS: '{{joinPath .PATH_BACKEND "chains"}}'
+
+  # Components
+  COMPONENT_WAVS_WIT_BRANCH: "main"
+  ALL_OPERATOR_COMPONENTS: ["email-reader"]
+  ALL_AGGREGATOR_COMPONENTS: ["submitter"]
+  COMPONENT_PREFIX: "app-component"
+
+  # Contracts
+  ALL_CONTRACTS: ["service-handler"]
+  CONTRACT_PREFIX: "app-contract"
+  CW_OPTIMIZER_CACHE: "hydro-email"
+
+  # OAUTH config
+  OAUTH_AUTH_URL: https://accounts.google.com/o/oauth2/v2/auth
+  OAUTH_TOKEN_URL: https://oauth2.googleapis.com/token
+  OAUTH_GMAIL_SCOPE: "https://mail.google.com/ https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify"
+
+  # Docker images
+  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.7{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.10{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_COSMWASM_OPTIMIZER: 'cosmwasm/optimizer{{if eq .ARCH "arm64"}}-arm64{{end}}:0.17.0'
+  DOCKER_IMAGE_JAEGER: "jaegertracing/jaeger:2.5.0"
+  DOCKER_IMAGE_PROMETHEUS: "prom/prometheus:v3.3.0"
+  DOCKER_IMAGE_IPFS: "ipfs/kubo:v0.38.1"
+  DOCKER_IMAGE_GREENMAIL: "greenmail/standalone:latest"
+
+  # Ports
+  PORT_WAVS_OPERATOR_BASE: 8123 # Base port for WAVS, subsequent ports will be incremented by 1 for each instance
+  PORT_WAVS_AGGREGATOR: 8200
+  PORT_IPFS_API: 8300
+  PORT_IPFS_GATEWAY: 8301
+  PORT_JAEGER_UI: 16686
+  PORT_PROMETHEUS_UI: 9092
+
+  # Timeouts
+  TIMEOUT_HEALTH_CHECK: 5 # seconds to wait for service health checks
+
+  # Misc
+  DOCKER_SUDO:
+    sh: |
+      if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+        echo ""
+      else
+        echo "sudo"
+      fi

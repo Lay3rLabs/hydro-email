@@ -1,0 +1,308 @@
+version: "3"
+
+includes:
+  config:
+    taskfile: ./config.yml
+    flatten: true
+env:
+  # avoid namespace conflicts with other env vars
+  # see https://github.com/go-task/task/issues/1038
+  COMPOSE_DOCKER_IMAGE_WAVS: "{{.DOCKER_IMAGE_WAVS}}"
+  COMPOSE_DOCKER_IMAGE_JAEGER: "{{.DOCKER_IMAGE_JAEGER}}"
+  COMPOSE_DOCKER_IMAGE_PROMETHEUS: "{{.DOCKER_IMAGE_PROMETHEUS}}"
+  COMPOSE_DOCKER_IMAGE_IPFS: "{{.DOCKER_IMAGE_IPFS}}"
+  COMPOSE_PATH_WAVS_HOME: "{{.PATH_WAVS_HOME}}"
+  COMPOSE_PORT_IPFS_API: "{{.PORT_IPFS_API}}"
+  COMPOSE_PORT_IPFS_GATEWAY: "{{.PORT_IPFS_GATEWAY}}"
+  COMPOSE_PORT_WAVS_AGGREGATOR: "{{.PORT_WAVS_AGGREGATOR}}"
+  COMPOSE_PORT_JAEGER_UI: "{{.PORT_JAEGER_UI}}"
+  COMPOSE_PORT_PROMETHEUS_UI: "{{.PORT_PROMETHEUS_UI}}"
+
+tasks:
+  start-all:
+    vars:
+      OPERATORS: '{{.OPERATORS | default "1"}}'
+    deps:
+      [
+        { task: start-wavs, vars: { OPERATORS: "{{.OPERATORS}}" } },
+        { task: start-chains },
+        { task: start-ipfs },
+      ]
+
+  stop-all:
+    deps: [stop-wavs, stop-chains, stop-ipfs]
+
+  ###################################################################
+  ######################## IPFS #####################################
+  ###################################################################
+
+  start-ipfs:
+    preconditions:
+      - test -f "{{.PATH_DOCKER_FILES}}/ipfs.yml"
+      - sh: "command -v docker"
+        msg: "Docker is required but not installed"
+    cmds:
+      - |
+        echo "Starting IPFS node with API on port {{.PORT_IPFS_API}} and Gateway on port {{.PORT_IPFS_GATEWAY}}"
+      - |
+        {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/ipfs.yml" up --force-recreate -d
+
+  stop-ipfs:
+    cmds:
+      - echo "Stopping IPFS"
+      - |
+        {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/ipfs.yml" down --remove-orphans --volumes
+
+  ###################################################################
+  ######################## CHAINS ###################################
+  ###################################################################
+
+  start-chains:
+    cmds:
+      - "{{.PATH_CHAINS}}/start_neutron.sh"
+
+  stop-chains:
+    cmds:
+      - docker kill neutron-local || true
+      - docker rm neutron-local || true
+
+  ###################################################################
+  ######################## WAVS #####################################
+  ###################################################################
+
+  start-wavs:
+    desc: "Start WAVS operator instances, aggregator, and telemetry"
+    preconditions:
+      - test -f "{{.PATH_DOCKER_FILES}}/wavs-aggregator.yml"
+      - test -f "{{.PATH_DOCKER_FILES}}/wavs-operator.yml"
+      - test -f "{{.PATH_DOCKER_FILES}}/wavs-telemetry.yml"
+      - test -f "{{.PATH_DOCKER_FILES}}/wavs-telemetry-prometheus.yml"
+      - sh: "command -v docker"
+        msg: "Docker is required but not installed"
+    cmds:
+      - task: start-wavs-operator-inner
+        # Optional - pass this in, or 1 by default
+        vars:
+          OPERATORS: '{{.OPERATORS | default "1"}}'
+
+  stop-wavs:
+    desc: "Stop all WAVS instances, aggregator, and telemetry"
+    cmds:
+      - task: stop-wavs-operators
+      - task: stop-wavs-aggregator
+      - task: stop-wavs-telemetry
+
+  start-wavs-operator-inner:
+    internal: true
+    vars:
+      OPERATORS_RANGE:
+        sh: seq 1 {{.OPERATORS}}
+    requires:
+      vars: [OPERATORS]
+    deps:
+      - task: start-wavs-telemetry
+      - task: start-wavs-aggregator
+      - for: { var: OPERATORS_RANGE }
+        task: start-wavs-operator-{{.ITEM}}
+
+  start-wavs-aggregator:
+    internal: true
+    deps:
+      - task: docker-start-wavs-aggregator
+    cmds:
+      # Wait for WAVS Aggregator to be up and running
+      - |
+        for ((i=0; i<{{.TIMEOUT_HEALTH_CHECK}}; i++)); do
+          if nc -z 127.0.0.1 {{.PORT_WAVS_AGGREGATOR}}; then
+            break
+          fi
+          echo "Waiting for Aggregator to start on port {{.PORT_WAVS_AGGREGATOR}}..."
+          sleep 1
+        done
+        if ! nc -z 127.0.0.1 {{.PORT_WAVS_AGGREGATOR}}; then
+          echo "Aggregator did not start after {{.TIMEOUT_HEALTH_CHECK}} seconds"
+          exit 1
+        fi
+      - echo "Aggregator is up!"
+
+  start-wavs-operator-*:
+    vars:
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+      WAVS_PORT:
+        sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
+    deps:
+      - task: docker-start-wavs-operator-{{.WAVS_INSTANCE}}
+    cmds:
+      # Wait for WAVS instance to be up and running
+      - |
+        for ((i=0; i<{{.TIMEOUT_HEALTH_CHECK}}; i++)); do
+          if nc -z 127.0.0.1 {{.WAVS_PORT}}; then
+            break
+          fi
+          echo "Waiting for WAVS #{{.WAVS_INSTANCE}} to start on port {{.WAVS_PORT}}..."
+          sleep 1
+        done
+        if ! nc -z 127.0.0.1 {{.WAVS_PORT}}; then
+          echo "WAVS #{{.WAVS_INSTANCE}} did not start after {{.TIMEOUT_HEALTH_CHECK}} seconds"
+          exit 1
+        fi
+      - |
+        echo "WAVS #{{.WAVS_INSTANCE}} is up!"
+
+  docker-start-wavs-aggregator:
+    internal: true
+    env:
+      WAVS_AGGREGATOR_COSMOS_CREDENTIAL:
+        sh: task backend:get-wavs-aggregator-cosmos-credential
+      WAVS_LOG_LEVEL: '{{.RUST_LOG | default "info"}}'
+    cmds:
+      - echo "Starting WAVS Aggregator on port {{.PORT_WAVS_AGGREGATOR}}"
+      - |
+        {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/wavs-aggregator.yml" up --force-recreate -d
+
+  docker-start-wavs-operator-*:
+    internal: true
+    vars:
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+    env:
+      WAVS_ENV_IMAP_DEBUG_CAPABILITIES: "{{.WAVS_ENV_IMAP_DEBUG_CAPABILITIES}}"
+      WAVS_ENV_IMAP_PORT: "{{.WAVS_ENV_IMAP_PORT}}"
+      WAVS_ENV_IMAP_HOST: "{{.WAVS_ENV_IMAP_HOST}}"
+      WAVS_ENV_IMAP_TLS: "{{.WAVS_ENV_IMAP_TLS}}"
+      WAVS_ENV_IMAP_CREDENTIAL_KIND: "{{.WAVS_ENV_IMAP_CREDENTIAL_KIND}}"
+      WAVS_ENV_IMAP_USERNAME: "{{.WAVS_ENV_IMAP_USERNAME}}"
+      WAVS_ENV_IMAP_PASSWORD: "{{.WAVS_ENV_IMAP_PASSWORD}}"
+      WAVS_ENV_GMAIL_CLIENT_ID: "{{.WAVS_ENV_GMAIL_CLIENT_ID}}"
+      WAVS_ENV_GMAIL_CLIENT_SECRET: "{{.WAVS_ENV_GMAIL_CLIENT_SECRET}}"
+      WAVS_ENV_GMAIL_TOKEN: "{{.WAVS_ENV_GMAIL_TOKEN}}"
+      COMPOSE_PROJECT_NAME: "wavs-operator-{{.WAVS_INSTANCE}}"
+      COMPOSE_PORT_WAVS:
+        sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
+      WAVS_OPERATOR_MNEMONIC:
+        sh: task backend:get-wavs-operator-mnemonic-{{.WAVS_INSTANCE}}
+      WAVS_LOG_LEVEL: '{{.RUST_LOG | default "info"}}'
+    cmds:
+      - |
+        echo "Starting WAVS #{{.WAVS_INSTANCE}} on port $COMPOSE_PORT_WAVS"
+      - |
+        {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/wavs-operator.yml" up --force-recreate -d
+
+  stop-wavs-aggregator:
+    internal: true
+    desc: "Stop WAVS aggregator service"
+    cmds:
+      - echo "Stopping WAVS Aggregator"
+      - |
+        {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/wavs-aggregator.yml" down --remove-orphans --volumes
+
+  stop-wavs-operators:
+    desc: "Stop all WAVS operator instances"
+    cmds:
+      - |
+        # Get container names - these are also the project names
+        containers=$(docker ps -a --filter "name=^wavs-operator" --format "{{`{{.Names}}`}}")
+        if [ -n "$containers" ]; then
+          for project_name in $containers; do
+            echo "Stopping compose project: $project_name"
+            {{.DOCKER_SUDO}} docker compose --project-name "$project_name" --file "{{.PATH_DOCKER_FILES}}/wavs-operator.yml" down --remove-orphans --volumes
+          done
+        else
+          echo "No WAVS operator containers found"
+        fi
+
+  ###################################################################
+  ######################## LOCAL MAIL SERVER ########################
+  ###################################################################
+
+  mail-server-start:
+    desc: "Start imap server"
+    # ports listed at
+    # https://greenmail-mail-test.github.io/greenmail/#deploy_docker_standalone
+    vars:
+      IMAP_PORT:
+        sh: echo "${WAVS_ENV_IMAP_PORT:-993}"
+    cmds:
+      - >
+        {{.DOCKER_SUDO}} docker run -d
+        --name mail-server-local
+        -p 3993:3993
+        -p 3025:3025
+        -p 3143:3143
+        {{.DOCKER_IMAGE_GREENMAIL}}
+
+  mail-server-stop:
+    desc: "Stop imap server"
+    cmds:
+      - |
+        {{.DOCKER_SUDO}} docker kill mail-server-local || true
+      - |
+        {{.DOCKER_SUDO}} docker rm mail-server-local || true
+
+  mail-server-send:
+    vars:
+      USERNAME:
+        sh: echo "${WAVS_ENV_IMAP_USERNAME}"
+      MSG: '{{.MSG | default "Hello, World!"}}'
+    cmds:
+      - |
+        printf "EHLO localhost\r\nMAIL FROM:<sender@example.com>\r\nRCPT TO:<{{.USERNAME}}>\r\nDATA\r\nSubject: Test email via GreenMail\r\nFrom: sender@example.com\r\nTo: {{.USERNAME}}\r\n\r\n{{.MSG}}\r\n.\r\nQUIT\r\n" \
+        | nc localhost 3025
+
+  ###################################################################
+  ######################## HELPERS  #################################
+  ###################################################################
+  get-wavs-operator-port-*:
+    desc: "Get the WAVS port for a wavs number"
+    vars:
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+      # We use 1 as the WAVS_INSTANCE, so subtract 1 to keep the base port the same
+      WAVS_PORT: "{{sub (add .PORT_WAVS_OPERATOR_BASE (atoi .WAVS_INSTANCE)) 1}}"
+    cmds:
+      - echo "{{.WAVS_PORT}}"
+
+  get-wavs-operator-mnemonic-*:
+    vars:
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+      ENV_VAR_NAME: "WAVS_OPERATOR_MNEMONIC_{{.WAVS_INSTANCE}}"
+    cmds:
+      - echo "${{.ENV_VAR_NAME}}"
+
+  get-wavs-aggregator-cosmos-credential:
+    desc: "Get the WAVS submission credential for the aggregator"
+    vars:
+      ENV_VAR_NAME: "WAVS_AGGREGATOR_COSMOS_CREDENTIAL"
+    cmds:
+      - echo "${{.ENV_VAR_NAME}}"
+
+  start-wavs-telemetry:
+    deps: [docker-start-wavs-telemetry]
+    cmds:
+      # Wait for Jaeger and Prometheus to be up and running
+      # the deps here will ensure that the docker-start-telemetry task is run first
+      - |
+        while ! nc -z localhost 16686; do
+          echo "Waiting for Jaeger to start on port 16686..."
+          sleep 1
+        done
+      - echo "Jaeger is up and running!"
+      - |
+        while ! nc -z localhost 9090; do
+          echo "Waiting for Prometheus to start on port 9090..."
+          sleep 1
+        done
+      - echo "Prometheus is up and running!"
+
+  docker-start-wavs-telemetry:
+    internal: true
+    cmds:
+      - echo "Starting Telemetry"
+      - |
+        {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/wavs-telemetry.yml" up --force-recreate -d
+
+  stop-wavs-telemetry:
+    internal: true
+    desc: "Stop telemetry services"
+    cmds:
+      - echo "Stopping Telemetry"
+      - |
+        {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/wavs-telemetry.yml" down --remove-orphans --volumes

@@ -1,36 +1,18 @@
 # This is mostly just a convenience to start common tasks from the root directory
 version: "3"
 
-silent: true
+# silent: true
 
 dotenv: [".env"]
 
-vars:
-  WAVS_DOCKER_IMAGE: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.4{{if eq .ARCH "arm64"}}-arm64{{end}}'
-  #WAVS_DOCKER_IMAGE: "wavs:local"
-  GREENMAIL_DOCKER_IMAGE: "greenmail/standalone:latest"
-  REPO_ROOT:
-    # find the root directory of the repository by looking for the `.git` directory.
-    sh: git rev-parse --show-toplevel
-  DOCKER_SUDO:
-    sh: |
-      if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-        echo ""
-      else
-        echo "sudo"
-      fi
-  BUILDS_PATH: '{{joinPath .REPO_ROOT "builds"}}'
-  WIT_DEFINITIONS_PATH: '{{joinPath .REPO_ROOT "wit-definitions"}}'
-  WAVS_HOME_PATH: '{{joinPath .REPO_ROOT "wavs-home"}}'
-  TEMP_CLONE_PATH: '{{joinPath .REPO_ROOT ".temp-clone"}}'
-  WAVS_WIT_BRANCH: "main"
-  COMPONENT_FILENAME: "wavs_imap_component.wasm"
-  # OAuth endpoints for Gmail
-  OAUTH_AUTH_URL: https://accounts.google.com/o/oauth2/v2/auth
-  OAUTH_TOKEN_URL: https://oauth2.googleapis.com/token
-  # Gmail OAuth scopes (can be overridden in .env or via CLI)
-  # Space-separated list of scopes as per OAuth2 spec
-  GMAIL_SCOPE: "https://mail.google.com/ https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify"
+includes:
+  config: ./taskfile/config.yml
+  components: ./taskfile/components.yml
+  contracts: ./taskfile/contracts.yml
+  backend: ./taskfile/backend.yml
+  test: ./taskfile/test.yml
+  oauth: ./taskfile/oauth.yml
+  # deploy: ./taskfile/deploy.yml
 
 tasks:
   default:
@@ -40,8 +22,8 @@ tasks:
   clean:
     desc: "Clean all builds"
     cmds:
-      - echo "Cleaning builds in {{.BUILDS_PATH}}"
-      - rm -rf "{{.BUILDS_PATH}}"
+      - echo "Cleaning builds in {{.PATH_BUILDS}}"
+      - rm -rf "{{.PATH_BUILDS}}"
 
   lint:
     desc: "Run code formatting and linting checks"
@@ -54,298 +36,23 @@ tasks:
     desc: "Pull required Docker images"
     cmds:
       - |
-        {{.DOCKER_SUDO}} docker pull {{.WAVS_DOCKER_IMAGE}}
+        {{.DOCKER_SUDO}} docker pull {{.DOCKER_IMAGE_WAVS}}
       - |
-        {{.DOCKER_SUDO}} docker pull {{.GREENMAIL_DOCKER_IMAGE}}
-
-  build:
-    cmds:
-      - echo "Building component"
-      - cargo build --target wasm32-wasip2
-      - mkdir -p "{{.BUILDS_PATH}}"
-      - cp "./target/wasm32-wasip2/debug/{{.COMPONENT_FILENAME}}" "{{.BUILDS_PATH}}/"
-
-  build-release:
-    cmds:
-      - echo "Building component"
-      - cargo build --release --target wasm32-wasip2
-      - mkdir -p "{{.BUILDS_PATH}}"
-      - cp "./target/wasm32-wasip2/release/{{.COMPONENT_FILENAME}}" "{{.BUILDS_PATH}}/"
-
-  clean-wit:
-    cmds:
-      - echo "Cleaning WIT"
-      - rm -rf "wit-worlds"
-
-  fetch-wit:
-    cmds:
-      - task: download-wit
-      - cd "{{.WIT_DEFINITIONS_PATH}}/operator" && wkg wit fetch
-
-  download-wit:
-    internal: true
-    deps: [clean-wit]
-    vars:
-      BRANCH: "{{default .WAVS_WIT_BRANCH .BRANCH}}"
-    cmds:
-      - echo "Downloading WIT worlds from {{.BRANCH}} branch"
-      - rm -rf "{{.TEMP_CLONE_PATH}}"
-      - mkdir -p "{{.TEMP_CLONE_PATH}}"
-      - rm -rf "{{.WIT_DEFINITIONS_PATH}}"
-      - mkdir -p "{{.WIT_DEFINITIONS_PATH}}"
-      - git -C "{{.TEMP_CLONE_PATH}}" clone --depth=1 --branch {{.BRANCH}} --single-branch https://github.com/Lay3rLabs/wavs-wasi.git
-      - cp -R "{{.TEMP_CLONE_PATH}}"/wavs-wasi/wit-definitions/* "{{.WIT_DEFINITIONS_PATH}}/"
-      - rm -rf "{{.TEMP_CLONE_PATH}}"
-
-  exec:
-    cmds:
-      - echo "Executing component from {{.COMPONENT_FILE}}"
-      - >
-        docker run --rm
-        --network host
-        -v "{{.WAVS_HOME_PATH}}":/wavs-home:ro
-        -v "{{.BUILDS_PATH}}":/builds:ro
-        --env-file "{{joinPath .REPO_ROOT ".env"}}"
-        -e WAVS_HOME="/wavs-home"
-        {{.WAVS_DOCKER_IMAGE}}
-        wavs-cli exec
-        --log-level '{{.RUST_LOG | default "info"}}'
-        --component "/builds/{{.COMPONENT_FILENAME}}"
-        --input "read-mail"
-
-  exec-local:
-    cmds:
-      - echo "Executing component from {{.COMPONENT_FILE}}"
-      - >
-        cd ../wavs/packages/cli && RUST_BACKTRACE=1 cargo run
-        exec
-        --log-level '{{.RUST_LOG | default "info"}}'
-        --component "/{{.BUILDS_PATH}}/{{.COMPONENT_FILENAME}}"
-        --input "read-mail"
-
-  watch:
-    watch: true
-    sources:
-      - "src/**/*.rs"
-      - "Cargo.toml"
-      - "Cargo.lock"
-    cmds:
-      - task: build
-      - task: exec
-
-  mail-server-start:
-    desc: "Start imap server"
-    # ports listed at
-    # https://greenmail-mail-test.github.io/greenmail/#deploy_docker_standalone
-    vars:
-      IMAP_PORT:
-        sh: echo "${WAVS_ENV_IMAP_PORT:-993}"
-    cmds:
-      - >
-        {{.DOCKER_SUDO}} docker run -d
-        --name mail-server-local
-        -p 3993:3993
-        -p 3025:3025
-        -p 3143:3143
-        {{.GREENMAIL_DOCKER_IMAGE}}
-
-  mail-server-stop:
-    desc: "Stop imap server"
-    cmds:
+        {{.DOCKER_SUDO}} docker pull {{.DOCKER_IMAGE_WAVS_CW_MIDDLEWARE}}
       - |
-        {{.DOCKER_SUDO}} docker kill mail-server-local || true
+        {{.DOCKER_SUDO}} docker pull {{.DOCKER_IMAGE_COSMWASM_OPTIMIZER}}
       - |
-        {{.DOCKER_SUDO}} docker rm mail-server-local || true
-
-  mail-server-restart:
-    desc: "Restart imap server"
-    cmds:
-      - task: mail-server-stop
-      - task: mail-server-start
-
-  mail-server-send:
-    vars:
-      USERNAME:
-        sh: echo "${WAVS_ENV_IMAP_USERNAME}"
-      MSG: '{{.MSG | default "Hello, World!"}}'
-    cmds:
+        {{.DOCKER_SUDO}} docker pull {{.DOCKER_IMAGE_JAEGER}}
       - |
-        printf "EHLO localhost\r\nMAIL FROM:<sender@example.com>\r\nRCPT TO:<{{.USERNAME}}>\r\nDATA\r\nSubject: Test email via GreenMail\r\nFrom: sender@example.com\r\nTo: {{.USERNAME}}\r\n\r\n{{.MSG}}\r\n.\r\nQUIT\r\n" \
-        | nc localhost 3025
-
-  gmail-bootstrap:
-    desc: "Bootstrap Gmail OAuth (local server displays auth code)"
-    cmds:
+        {{.DOCKER_SUDO}} docker pull {{.DOCKER_IMAGE_PROMETHEUS}}
       - |
-        set -euo pipefail
-        : "${WAVS_ENV_GMAIL_CLIENT_ID:?Set WAVS_ENV_GMAIL_CLIENT_ID to your OAuth Client ID}"
-        : "${WAVS_ENV_GMAIL_CLIENT_SECRET:?Set WAVS_ENV_GMAIL_CLIENT_SECRET to your OAuth Client Secret}"
+        {{.DOCKER_SUDO}} docker pull {{.DOCKER_IMAGE_IPFS}}
+      - |
+        {{.DOCKER_SUDO}} docker pull {{.DOCKER_IMAGE_GREENMAIL}}
 
-        # Check for required tools
-        if ! command -v jq >/dev/null 2>&1; then
-          echo "Error: jq is required. Install it with: brew install jq (macOS) or apt install jq (Linux)"
-          exit 1
-        fi
-
-        if ! command -v http-server >/dev/null 2>&1; then
-          echo "Error: http-server is required. See README.md"
-          exit 1
-        fi
-
-        # Generate PKCE verifier/challenge for security
-        if command -v openssl >/dev/null 2>&1; then
-          VERIFIER_RAW="$(openssl rand -base64 64)"
-          CODE_CHALLENGE="$(printf '%s' "$VERIFIER_RAW" | tr -d '\n\r' | tr '+/' '-_' | tr -d '=' \
-            | openssl dgst -binary -sha256 | base64 | tr '+/' '-_' | tr -d '=')"
-          CODE_VERIFIER="$(printf '%s' "$VERIFIER_RAW" | tr -d '\n\r' | tr '+/' '-_' | tr -d '=')"
-        else
-          echo "Error: openssl is required for PKCE generation"
-          exit 1
-        fi
-
-        # URL encode function
-        urlencode() {
-          python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$1"
-        }
-
-        # Start local HTTP server in background
-        # Find a free port starting at 53682
-        if [ -n "${OAUTH_PORT:-}" ]; then
-          PORT="$OAUTH_PORT"
-        else
-          PORT=53682
-          MAX_PORT=53782  # Try 100 ports
-          while [ $PORT -le $MAX_PORT ]; do
-            if ! lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
-              break
-            fi
-            PORT=$((PORT + 1))
-          done
-          if [ $PORT -gt $MAX_PORT ]; then
-            echo "Error: Could not find free port in range 53682-53782"
-            echo "Try manually setting OAUTH_PORT to a free port in your .env"
-            exit 1
-          fi
-        fi
-
-        REDIRECT_URI="http://localhost:${PORT}/oauth.html"
-
-        echo "Starting local HTTP server on port ${PORT}..."
-
-        # Temporarily disable -u to capture background PID safely
-        set +u
-        cd frontend && http-server -p ${PORT} . > /tmp/http-server.log 2>&1 &
-        SERVER_PID=$!
-        set -u
-
-        # Give server time to start and verify it's working
-        sleep 2
-
-        # Check if server is responding (better than checking process)
-        if ! curl -s http://localhost:${PORT}/oauth.html > /dev/null 2>&1; then
-          # Double check process is running
-          if ! kill -0 $SERVER_PID 2>/dev/null; then
-            echo "Error: HTTP server process died"
-            echo "Try manually setting OAUTH_PORT to a free port in your .env"
-            exit 1
-          fi
-          # Server running but not ready yet, wait a bit more
-          sleep 1
-        fi
-
-        # Ensure server is killed on exit
-        trap "kill $SERVER_PID 2>/dev/null || true" EXIT
-
-        # Build authorization URL
-        CLIENT_ID_ENC=$(urlencode "$WAVS_ENV_GMAIL_CLIENT_ID")
-        REDIRECT_URI_ENC=$(urlencode "$REDIRECT_URI")
-        SCOPE_ENC=$(urlencode "{{.GMAIL_SCOPE}}")
-
-        AUTH_URL="{{.OAUTH_AUTH_URL}}?response_type=code&client_id=${CLIENT_ID_ENC}&redirect_uri=${REDIRECT_URI_ENC}&scope=${SCOPE_ENC}&access_type=offline&prompt=consent&code_challenge=${CODE_CHALLENGE}&code_challenge_method=S256"
-
-        # Display instructions
-        echo
-        echo "=========================================="
-        echo "  GOOGLE AUTHORIZATION REQUIRED"
-        echo "=========================================="
-        echo
-        echo "1. Open this URL in your browser:"
-        echo
-        echo "$AUTH_URL"
-        echo
-        echo "2. After approving, you'll see a page with"
-        echo "   your authorization code displayed."
-        echo
-        echo "3. Copy the code from that page and paste"
-        echo "   it below."
-        echo
-        echo "=========================================="
-        echo
-
-        # Prompt for code
-        read -r -p "Paste the authorization code here: " AUTH_CODE
-
-        # Stop the server
-        kill $SERVER_PID 2>/dev/null || true
-        echo
-        echo "Server stopped."
-
-        if [ -z "$AUTH_CODE" ]; then
-          echo "Error: No code provided"
-          exit 1
-        fi
-
-        echo
-        echo "Exchanging code for tokens..."
-
-        # Exchange code for tokens
-        TOK="$(curl -sS -X POST "{{.OAUTH_TOKEN_URL}}" \
-          -H "Content-Type: application/x-www-form-urlencoded" \
-          --data-urlencode "grant_type=authorization_code" \
-          --data-urlencode "code=${AUTH_CODE}" \
-          --data-urlencode "redirect_uri=${REDIRECT_URI}" \
-          --data-urlencode "client_id=${WAVS_ENV_GMAIL_CLIENT_ID}" \
-          --data-urlencode "client_secret=${WAVS_ENV_GMAIL_CLIENT_SECRET}" \
-          --data-urlencode "code_verifier=${CODE_VERIFIER}")" || {
-          echo "Error: Token request failed"
-          exit 2
-        }
-
-        # Parse response
-        ERROR="$(echo "$TOK" | jq -r '.error // empty')"
-        if [ -n "$ERROR" ]; then
-          echo "Error from Google: $ERROR"
-          echo "$TOK" | jq -r '.error_description // empty'
-          exit 3
-        fi
-
-        REFRESH="$(echo "$TOK" | jq -r '.refresh_token // empty')"
-        ACCESS_TOKEN="$(echo "$TOK" | jq -r '.access_token // empty')"
-        EXPIRES="$(echo "$TOK" | jq -r '.expires_in // empty')"
-
-        if [ -z "$REFRESH" ]; then
-          echo "Error: No refresh_token returned."
-          echo
-          echo "Tips:"
-          echo "- Make sure you included access_type=offline and prompt=consent"
-          echo "- If you previously authorized this app, revoke it at:"
-          echo "  https://myaccount.google.com/permissions"
-          echo
-          echo "Full response:"
-          echo "$TOK"
-          exit 4
-        fi
-
-        # Display success message
-        echo
-        echo "=========================================="
-        echo "  SUCCESS!"
-        echo "=========================================="
-        echo
-        echo "Add this to your .env file:"
-        echo
-        echo "WAVS_ENV_GMAIL_TOKEN=${REFRESH}"
-        echo
-        echo "=========================================="
-        echo
-        echo "You can close your browser window now :)"
+  build-all:
+    desc: "Build everything that needs building"
+    cmds:
+      - task components:build-all
+      - task contracts:build-all
+      - task contracts:schema-all

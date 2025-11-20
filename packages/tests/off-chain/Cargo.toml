@@ -1,0 +1,25 @@
+[package]
+name = "off-chain-tests"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+app-tests-common = { workspace = true }
+app-client = { workspace = true, features = ["multitest"] }
+app-utils = { workspace = true }
+app-contract-service-handler = { workspace = true}
+app-contract-api= { workspace = true}
+wavs-types = { workspace = true }
+cw-multi-test = { workspace = true }
+cosmwasm-std = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+async-trait = { workspace = true }
+layer-climb-address = { workspace = true }

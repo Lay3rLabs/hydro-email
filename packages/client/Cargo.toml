@@ -1,0 +1,44 @@
+[package]
+name = "app-client"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+binary = ["client-pool", "client", "telegram", "dep:tokio", "dep:toml", "reqwest"]
+wasi = ["client", "telegram", "wstd", "dep:wavs-wasi-utils"]
+multitest = ["dep:cw-multi-test"]
+client-pool = ["dep:deadpool"]
+client = []
+telegram = []
+reqwest = ["dep:reqwest"]
+wstd = ["dep:wstd"]
+
+[dependencies]
+app-contract-api = { workspace = true}
+serde = { workspace = true }
+serde_json = { workspace = true }
+cosmwasm-std = { workspace = true }
+layer-climb = { workspace = true }
+tracing = {workspace = true}
+cfg-if = {workspace = true}
+tracing-subscriber = {workspace = true}
+anyhow = {workspace = true}
+wavs-types = {workspace = true}
+thiserror = {workspace = true}
+async-trait = {workspace = true}
+toml = {workspace = true, optional = true}
+reqwest = {workspace = true, optional = true}
+tokio = {workspace = true, optional = true}
+deadpool = { workspace = true, optional = true }
+cw-multi-test = { workspace = true, optional = true }
+wstd = { workspace = true, optional = true }
+wavs-wasi-utils = { workspace = true, optional = true }

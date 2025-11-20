@@ -1,0 +1,28 @@
+[package]
+name = "on-chain-tests"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+app-tests-common = { workspace = true }
+app-client = { workspace = true, features = ["binary"] }
+app-utils = { workspace = true }
+app-contract-service-handler = { workspace = true}
+app-contract-api= { workspace = true}
+wavs-types = { workspace = true }
+cosmwasm-std = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+async-trait = { workspace = true }
+deadpool = { workspace = true }
+layer-climb = { workspace = true }
+bip39 = { workspace = true }
+rand = { workspace = true }
+layer-climb-proto = { workspace = true }

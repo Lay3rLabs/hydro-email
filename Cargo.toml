@@ -1,5 +1,21 @@
-[package]
-name = "wavs-imap-component"
+[workspace]
+members = [
+    "packages/contracts/api",
+    "packages/contracts/service-handler",
+    "packages/components/operator/email-reader",
+    "packages/components/aggregator/submitter",
+    "packages/client",
+    "packages/utils",
+    "packages/version-pins",
+    "packages/tests/off-chain",
+    "packages/tests/on-chain",
+    "packages/tests/common",
+    # "packages/cli",
+]
+
+resolver = "2"
+
+[workspace.package]
 edition = "2021"
 version = "0.0.1"
 license = "GPL-3.0-or-later"
@@ -7,18 +23,33 @@ authors = ["Layer Labs (Cayman)"]
 repository = "https://github.com/Lay3rLabs/telegram-payments.git"
 rust-version = "1.90.0"
 
-[lib]
-crate-type = ["cdylib"]
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = "abort"
+incremental = false
+overflow-checks = true
 
-[dependencies]
+
+[workspace.dependencies]
+# Local
+app-contract-api = { path = "packages/contracts/api" }
+app-contract-service-handler = { path = "packages/contracts/service-handler" }
+app-utils = { path = "packages/utils" }
+app-client = { path = "packages/client" }
+app-tests-common = { path = "packages/tests/common" }
 
 # Error handling
 anyhow = "1.0.98"
 thiserror = "2.0.12"
 
 # WAVS
-wavs-wasi-utils = "2.0.0"
-wavs-types = { version = "=2.0.0-rc.3", default-features = false, features = [
+wavs-wasi-utils = "2.3.0"
+wavs-types = { version = "=2.0.0-rc.7", default-features = false, features = [
   "cosmwasm",
 ] }
 
@@ -32,14 +63,51 @@ wasip2 = "1.0.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 serde_urlencoded = "0.7.1"
+bincode = { version = "2.0.1", features = ["serde"] }
+toml = "0.9.5"
 
 # Async
+tokio = {version = "1.48.0", features = ["full"]}
 futures = "0.3.31"
+async-trait = "0.1.88"
+
+# http
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-webpki-roots", "multipart"] }
 
 # Email
 imap = {version = "2.4.1", default-features = false}
 mailparse = "0.16.1"
 cfdkim = { git = "https://github.com/Lay3rLabs/dkim-wasi.git", features = ["wasi-resolver"]}
+
+# CosmWasm
+cosmwasm-schema = "3"
+cosmwasm-std = { version = "=3.0.2", features = ["cosmwasm_2_0"] }
+cw-storage-plus = "3.0.1"
+cw2 = "3.0.0"
+cw-multi-test = { version = "3.0.1", features = [
+  "staking",
+  "stargate",
+  "cosmwasm_2_0",
+] }
+cw-utils = "3.0.0"
+
+# Layer-climb
+layer-climb = "0.8.7"
+layer-climb-core = "0.8.7"
+layer-climb-address = { version = "0.8.7", features = [
+  "cw-storage",
+  "openapi",
+] }
+layer-climb-config = "0.8.7"
+layer-climb-cli = "0.8.7"
+layer-climb-proto = "0.8.7"
+
+# Schema
+schemars = "1.0.4"
+serde-json-wasm = "1.0.1"
+
+# pool management
+deadpool = "0.12.2"
 
 # Security
 zeroize = "1.8.2"
@@ -47,8 +115,56 @@ zeroize = "1.8.2"
 # Misc
 cfg-if = "1.0.4"
 
+# hashing / cipher
+sha2 = "0.10.9"
+const-hex = "1.14.1"
+ripemd = "0.1.3"
+rustls = { version = "0.23", features = ["aws_lc_rs"] }
+ed25519-zebra = { version = "4.1.0", default-features = false, features = [
+  "alloc",
+] }
+k256 = { version = "0.13.4", default-features = false, features = ["ecdsa"] }
+bip39 = "2.2.0"
+
+# CLI
+clap = { version = "4.5.44", features = ["derive", "env", "string"] }
+dotenvy = "0.15.7"
+
+# Randomness
+rand = { version = "0.9.2" }
+
 # Logging
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 sloggers = "2.2.0"
 
-[dev-dependencies]
-tokio = {version = "1.48.0", features = ["full"]}
+# Version constraints for Rust 1.86 compatibility in Docker builds
+#
+# Context: wavs-wasi-utils and wavs-types depend on alloy crates with ^1.0.x requirements,
+# which allows Cargo to resolve to v1.1.x. However, alloy v1.1.x requires Rust 1.88+.
+# Our cosmwasm-optimizer Docker image uses Rust 1.86.
+#
+# Solution: These workspace dependencies define the <1.1 version constraints, and the
+# packages/version-pins crate depends on them to activate the constraints workspace-wide.
+# This ensures Cargo.lock uses v1.0.x even when regenerated from scratch.
+#
+# Note: Virtual workspaces can't directly constrain transitive dependencies - a workspace
+# member must actually use these dependencies for the constraints to take effect.
+# so we have packages/version-pins depend on them.
+alloy-provider = ">=1.0.37, <1.1"
+alloy-network = ">=1.0.37, <1.1"
+alloy-rpc-types-eth = ">=1.0.37, <1.1"
+alloy-rpc-types-any = ">=1.0.37, <1.1"
+alloy-consensus = ">=1.0.37, <1.1"
+alloy-consensus-any = ">=1.0.37, <1.1"
+alloy-eips = ">=1.0.37, <1.1"
+alloy-network-primitives = ">=1.0.37, <1.1"
+alloy-serde = ">=1.0.37, <1.1"
+alloy-tx-macros = ">=1.0.37, <1.1"
+alloy-eip2930 = ">=0.2.0, <0.2.3"
+alloy-eip7702 = ">=0.6.0, <0.6.3"
+alloy-json-rpc = ">=1.0.37, <1.1"
+alloy-rpc-client = ">=1.0.37, <1.1"
+alloy-signer = ">=1.0.37, <1.1"
+alloy-transport = ">=1.0.37, <1.1"
+alloy-transport-http = ">=1.0.37, <1.1"

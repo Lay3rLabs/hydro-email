@@ -1,0 +1,12 @@
+name: "ipfs"
+services:
+  ipfs:
+    container_name: ipfs
+    image: "${COMPOSE_DOCKER_IMAGE_IPFS:-}"
+    stop_signal: SIGKILL
+    command: daemon --offline
+    ports:
+      # - "4001:4001"
+      # - "4001:4001/udp"
+      - "${COMPOSE_PORT_IPFS_GATEWAY:-8080}:8080"
+      - "${COMPOSE_PORT_IPFS_API:-5001}:5001"
