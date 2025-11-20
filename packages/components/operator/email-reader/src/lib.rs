@@ -11,7 +11,7 @@ use crate::{email::verify::verify_email, wavs::operator::input::TriggerData};
 
 // this is needed just to make the ide/compiler happy... we're _always_ compiling to wasm32-wasi
 wit_bindgen::generate!({
-    path: "wit-definitions/operator/wit",
+    path: "../../../../wit-definitions/operator/wit",
     world: "wavs-world",
     generate_all,
     with: {
@@ -23,7 +23,7 @@ wit_bindgen::generate!({
 struct Component;
 
 impl Guest for Component {
-    fn run(trigger_action: TriggerAction) -> Result<Option<WasmResponse>, String> {
+    fn run(trigger_action: TriggerAction) -> Result<Vec<WasmResponse>, String> {
         wstd::runtime::block_on(async move {
             match inner(trigger_action).await {
                 Ok(resp) => Ok(resp),
@@ -36,7 +36,7 @@ impl Guest for Component {
     }
 }
 
-async fn inner(trigger_action: TriggerAction) -> anyhow::Result<Option<WasmResponse>> {
+async fn inner(trigger_action: TriggerAction) -> anyhow::Result<Vec<WasmResponse>> {
     match trigger_action.data {
         TriggerData::Raw(data) => {
             let data = std::str::from_utf8(&data)?;
@@ -46,7 +46,7 @@ async fn inner(trigger_action: TriggerAction) -> anyhow::Result<Option<WasmRespo
                         Some(email) => email,
                         None => {
                             println!("No new email found.");
-                            return Ok(None);
+                            return Ok(Vec::new());
                         }
                     };
 
@@ -67,7 +67,7 @@ async fn inner(trigger_action: TriggerAction) -> anyhow::Result<Option<WasmRespo
             bail!("Unsupported TriggerData variant");
         }
     }
-    Ok(None)
+    Ok(Vec::new())
 }
 
 export!(Component);

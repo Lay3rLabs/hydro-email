@@ -1,0 +1,16 @@
+[default]
+jaeger = "http://localhost:4317"
+prometheus = "http://localhost:9092"
+
+[default.chains.cosmos.pion-1]
+bech32_prefix = "neutron"
+rpc_endpoint = "http://localhost:26657"
+grpc_endpoint = "http://localhost:9090"
+gas_price = 0.025
+gas_denom = "untrn"
+
+[wavs]
+
+[cli]
+
+[aggregator]

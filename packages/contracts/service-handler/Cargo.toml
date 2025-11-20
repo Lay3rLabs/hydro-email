@@ -1,0 +1,32 @@
+[package]
+name = "app-contract-service-handler"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+publish = false
+
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "schema"
+path = "bin/schema.rs"
+
+
+[dependencies]
+app-contract-api = { workspace = true }
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus = { workspace = true }
+cw2 = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde-json-wasm = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+cw-utils = { workspace = true }
+wavs-types = { workspace = true }
+layer-climb-proto = { workspace = true }

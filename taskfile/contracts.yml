@@ -1,0 +1,96 @@
+version: "3"
+
+includes:
+  config:
+    taskfile: ./config.yml
+    flatten: true
+
+tasks:
+  ### CLEANING TASKS
+  clean-all:
+    cmds:
+      - echo "Cleaning contract builds"
+      - |
+        rm -rf "{{.PATH_CONTRACT_BUILDS}}"
+      - |
+        {{.DOCKER_SUDO}} rm -rf "./artifacts" || true
+
+  clean:
+    requires:
+      vars: [CONTRACT]
+    vars:
+      BASENAME:
+        sh: task contracts:basename CONTRACT={{.CONTRACT}}
+      PATH: "{{.PATH_CONTRACT_BUILDS}}/{{.BASENAME}}.wasm"
+    cmds:
+      - echo "Cleaning {{.CONTRACT}} contract from {{.PATH}}"
+      - rm -rf "{{.PATH}}"
+
+  ### BUILDING TASKS
+  build-all:
+    cmds:
+      - for: { var: ALL_CONTRACTS, parallel: true }
+        task: build
+        vars:
+          CONTRACT: "{{.ITEM}}"
+
+  build:
+    requires:
+      vars: [CONTRACT]
+    vars:
+      BASENAME:
+        sh: task contracts:basename CONTRACT={{.CONTRACT}}
+      PATH_SRC: "packages/contracts/{{.CONTRACT}}"
+      FILENAME: "{{.BASENAME}}.wasm"
+      PACKAGE: "{{.CONTRACT_PREFIX}}-{{.KIND}}-{{.CONTRACT}}"
+    cmds:
+      - echo "Building contract {{.CONTRACT}} at {{.PATH_SRC}}"
+      - |
+        {{.DOCKER_SUDO}} rm -rf "./artifacts/{{.FILENAME}}" || true
+      - mkdir -p "./artifacts"
+      - >
+        {{.DOCKER_SUDO}} docker run --rm
+        -v "{{.PATH_REPO_ROOT}}:/code"
+        --mount type=volume,source="{{.CW_OPTIMIZER_CACHE}}_cache",target=/target
+        --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry
+        {{.DOCKER_IMAGE_COSMWASM_OPTIMIZER}} "{{.PATH_SRC}}"
+      - mkdir -p "{{.PATH_CONTRACT_BUILDS}}"
+      - cp -r "./artifacts/{{.FILENAME}}" "{{.PATH_CONTRACT_BUILDS}}/"
+      - |
+        {{.DOCKER_SUDO}} rm -rf "./artifacts/{{.FILENAME}}" || true
+      - echo "Built contract at {{.PATH_CONTRACT_BUILDS}}/{{.FILENAME}}"
+
+  ### SCHEMA TASKS
+  schema-all:
+    cmds:
+      - for: { var: ALL_CONTRACTS, parallel: true }
+        task: schema
+        vars:
+          CONTRACT: "{{.ITEM}}"
+
+  schema:
+    requires:
+      vars: [CONTRACT]
+    vars:
+      BASENAME:
+        sh: task contracts:basename CONTRACT={{.CONTRACT}}
+      PATH_SRC: "packages/contracts/{{.CONTRACT}}"
+      FILENAME: "{{.BASENAME}}.wasm"
+      PACKAGE: "{{.CONTRACT_PREFIX}}-{{.KIND}}-{{.CONTRACT}}"
+    cmds:
+      - echo "Building schema for contract {{.CONTRACT}} at {{.PATH_SRC}}"
+      - rm -rf "{{.PATH_CONTRACT_SCHEMA}}/{{.CONTRACT}}"
+      - mkdir -p "{{.PATH_CONTRACT_SCHEMA}}"
+      - cd "{{.PATH_SRC}}" && cargo run --bin schema
+      - rm -rf "{{.PATH_SRC}}/schema/cw_schema"
+      - mv "{{.PATH_SRC}}/schema" "{{.PATH_CONTRACT_SCHEMA}}/{{.CONTRACT}}"
+      - echo "Built schema for contract {{.CONTRACT}} at {{.PATH_CONTRACT_SCHEMA}}/{{.CONTRACT}}"
+
+  ### HELPERS
+  basename:
+    requires:
+      vars: [CONTRACT]
+    vars:
+      NAME: "{{.CONTRACT_PREFIX}}_{{.CONTRACT}}"
+    cmds:
+      - echo "{{ replace "-" "_" .NAME }}"

@@ -1,7 +1,9 @@
 # automatically created by cw-optimizer, we use the same name for final build artifacts
 artifacts
 # to not confuse with that automatic directory, we have our own builds directory for final output
-builds
+.builds
+# deployments directory for deployed artifacts
+.deployments
 # secrets
 .env
 # backend binaries
@@ -35,7 +37,7 @@ target
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+.idea/
 
 # general IDE/OS stuff
 *.vim

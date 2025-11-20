@@ -1,0 +1,21 @@
+name: "wavs-aggregator"
+services:
+  aggregator:
+    container_name: "wavs-aggregator"
+    image: "${COMPOSE_DOCKER_IMAGE_WAVS:-}"
+    stop_signal: SIGKILL
+    environment:
+      - WAVS_AGGREGATOR_COSMOS_CREDENTIAL=${WAVS_AGGREGATOR_COSMOS_CREDENTIAL:-}
+      - RUST_LOG=${WAVS_LOG_LEVEL:-}
+      - WAVS_AGGREGATOR_LOG_LEVEL=${WAVS_LOG_LEVEL:-}
+    command:
+      [
+        "wavs-aggregator",
+        "--home",
+        "/wavs-home",
+        "--port",
+        "${COMPOSE_PORT_WAVS_AGGREGATOR:-}",
+      ]
+    volumes:
+      - "${COMPOSE_PATH_WAVS_HOME:-}:/wavs-home"
+    network_mode: "host"

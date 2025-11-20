@@ -305,7 +305,7 @@ impl std::io::Write for Connection {
             let size = self._send_stream.check_write().map_err(|e| {
                 std::io::Error::new(std::io::ErrorKind::Other, format!("Stream error: {:?}", e))
             })?;
-            let size = size.min(buf.len() as u64) as usize;
+            let size = size.min(buf.len() as u64).try_into().unwrap();
 
             if size == 0 {
                 self._send_stream.subscribe().block();

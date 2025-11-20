@@ -1,0 +1,111 @@
+version: "3"
+
+includes:
+  config:
+    taskfile: ./config.yml
+    flatten: true
+
+tasks:
+  ### CLEANING TASKS
+  clean-all:
+    cmds:
+      - echo "Cleaning component builds"
+      - |
+        rm -rf "{{.PATH_COMPONENT_BUILDS}}"
+
+  clean:
+    requires:
+      vars: [COMPONENT, KIND]
+    vars:
+      BASENAME:
+        sh: task components:basename COMPONENT={{.COMPONENT}} KIND={{.KIND}}
+      PATH: "{{.PATH_COMPONENT_BUILDS}}/{{.KIND}}/{{.BASENAME}}.wasm"
+    cmds:
+      - echo "Cleaning {{.KIND}} component {{.COMPONENT}} from {{.PATH}}"
+      - rm -rf "{{.PATH}}"
+
+  ### WIT MANAGEMENT TASKS
+  clean-wit:
+    cmds:
+      - echo "Cleaning WIT in {{.PATH_WIT_DEFINITIONS}}"
+      - rm -rf "{{.PATH_WIT_DEFINITIONS}}"
+
+  fetch-wit:
+    cmds:
+      - task: clone-wit-repo
+      - cd "{{.PATH_WIT_DEFINITIONS}}/operator" && wkg wit fetch
+      - cd "{{.PATH_WIT_DEFINITIONS}}/aggregator" && wkg wit fetch
+
+  clone-wit-repo:
+    internal: true
+    deps: [clean-wit]
+    vars:
+      BRANCH: "{{default .COMPONENT_WAVS_WIT_BRANCH .BRANCH}}"
+    cmds:
+      - echo "Downloading WIT worlds from {{.BRANCH}} branch"
+      - rm -rf "{{.PATH_TEMP_CLONE}}"
+      - mkdir -p "{{.PATH_TEMP_CLONE}}"
+      - rm -rf "{{.WIT_DEFINITIONS_PATH}}"
+      - mkdir -p "{{.PATH_WIT_DEFINITIONS}}"
+      - git -C "{{.PATH_TEMP_CLONE}}" clone --depth=1 --branch {{.BRANCH}} --single-branch https://github.com/Lay3rLabs/wavs-wasi.git
+      - cp -R "{{.PATH_TEMP_CLONE}}"/wavs-wasi/wit-definitions/* "{{.PATH_WIT_DEFINITIONS}}/"
+      - rm -rf "{{.PATH_TEMP_CLONE}}"
+
+  ### BUILD TASKS
+  build-all:
+    cmds:
+      - for: { var: ALL_OPERATOR_COMPONENTS, parallel: true }
+        task: build
+        vars:
+          COMPONENT: "{{.ITEM}}"
+          KIND: "operator"
+      - for: { var: ALL_AGGREGATOR_COMPONENTS, parallel: true }
+        task: build
+        vars:
+          COMPONENT: "{{.ITEM}}"
+          KIND: "aggregator"
+
+  build:
+    requires:
+      vars: [COMPONENT, KIND]
+    vars:
+      BASENAME:
+        sh: task components:basename COMPONENT={{.COMPONENT}} KIND={{.KIND}}
+      PATH_SRC: "packages/components/{{.KIND}}/{{.COMPONENT}}"
+      FILENAME: "{{.BASENAME}}.wasm"
+      PACKAGE: "{{.COMPONENT_PREFIX}}-{{.KIND}}-{{.COMPONENT}}"
+    cmds:
+      - echo "Building {{.KIND}} component {{.COMPONENT}} at {{.PATH_SRC}}"
+      - cargo build --release --package {{.PACKAGE}} --target wasm32-wasip2
+      - mkdir -p "{{.PATH_COMPONENT_BUILDS}}"
+      - cp "./target/wasm32-wasip2/release/{{.FILENAME}}" "{{.PATH_COMPONENT_BUILDS}}/"
+
+  ### Execution
+  exec-read-mail:
+    vars:
+      BASENAME:
+        sh: task components:basename COMPONENT=email-reader KIND=operator
+      FILENAME: "{{.BASENAME}}.wasm"
+    cmds:
+      - echo "Executing component from {{.COMPONENT_FILE}}"
+      - >
+        docker run --rm
+        --network host
+        -v "{{.PATH_WAVS_HOME}}":/wavs-home:ro
+        -v "{{.PATH_COMPONENT_BUILDS}}":/builds:ro
+        --env-file "{{joinPath .PATH_REPO_ROOT ".env"}}"
+        -e WAVS_HOME="/wavs-home"
+        {{.DOCKER_IMAGE_WAVS}}
+        wavs-cli exec
+        --log-level '{{.RUST_LOG | default "info"}}'
+        --component "/builds/{{.FILENAME}}"
+        --input "read-mail"
+
+  ### HELPERS
+  basename:
+    requires:
+      vars: [COMPONENT, KIND]
+    vars:
+      NAME: "{{.COMPONENT_PREFIX}}_{{.KIND}}_{{.COMPONENT}}"
+    cmds:
+      - echo "{{ replace "-" "_" .NAME }}"

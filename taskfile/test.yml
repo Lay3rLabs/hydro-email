@@ -1,0 +1,19 @@
+version: "3"
+
+includes:
+  config:
+    taskfile: ./config.yml
+    flatten: true
+
+tasks:
+  off-chain:
+    cmds:
+      - echo "Testing off-chain"
+      - cd packages/tests/off-chain && cargo test
+      - for: { var: ALL_CONTRACTS }
+        cmd: cd packages/contracts/{{.ITEM}} && cargo test
+
+  on-chain:
+    cmds:
+      - echo "Testing on-chain"
+      - cd packages/tests/on-chain && cargo test -- --test-threads 1

@@ -1,0 +1,26 @@
+[package]
+name = "app-component-aggregator-submitter"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+app-client = { workspace = true, features = ["wasi"] }
+app-contract-api = { workspace = true }
+layer-climb = { workspace = true }
+serde = { workspace = true }
+bincode = { workspace = true }
+anyhow = { workspace = true }
+wstd = { workspace = true }
+wavs-wasi-utils = { workspace = true }
+wit-bindgen-rt = { workspace = true }
+thiserror = { workspace = true }
+cosmwasm-std = { workspace = true }
+wavs-types = {workspace = true}
+wit-bindgen = {workspace = true}
+wasip2 = { workspace = true }
+
+[lib]
+crate-type = ["cdylib"]

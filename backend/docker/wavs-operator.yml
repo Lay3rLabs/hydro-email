@@ -1,0 +1,32 @@
+services:
+  wavs:
+    image: "${COMPOSE_DOCKER_IMAGE_WAVS:-}"
+    container_name: "${COMPOSE_PROJECT_NAME:-}"
+    stop_signal: SIGKILL
+    environment:
+      - WAVS_SUBMISSION_MNEMONIC=${WAVS_OPERATOR_MNEMONIC:-}
+      - RUST_LOG=${WAVS_LOG_LEVEL:-}
+      - WAVS_LOG_LEVEL=${WAVS_LOG_LEVEL:-}
+      - WAVS_ENV_IMAP_DEBUG_CAPABILITIES=${WAVS_ENV_IMAP_DEBUG_CAPABILITIES:-}
+      - WAVS_ENV_IMAP_PORT=${WAVS_ENV_IMAP_PORT:-}
+      - WAVS_ENV_IMAP_HOST=${WAVS_ENV_IMAP_HOST:-}
+      - WAVS_ENV_IMAP_TLS=${WAVS_ENV_IMAP_TLS:-}
+      - WAVS_ENV_IMAP_CREDENTIAL_KIND=${WAVS_ENV_IMAP_CREDENTIAL_KIND:-}
+      - WAVS_ENV_IMAP_USERNAME=${WAVS_ENV_IMAP_USERNAME:-}
+      - WAVS_ENV_IMAP_PASSWORD=${WAVS_ENV_IMAP_PASSWORD:-}
+      - WAVS_ENV_GMAIL_CLIENT_ID=${WAVS_ENV_GMAIL_CLIENT_ID:-}
+      - WAVS_ENV_GMAIL_CLIENT_SECRET=${WAVS_ENV_GMAIL_CLIENT_SECRET:-}
+      - WAVS_ENV_GMAIL_TOKEN=${WAVS_ENV_GMAIL_TOKEN:-}
+    command:
+      [
+        "wavs",
+        "--home",
+        "/wavs-home",
+        "--data",
+        "/var/${COMPOSE_PROJECT_NAME:-}",
+        "--port",
+        "${COMPOSE_PORT_WAVS:-}",
+      ]
+    volumes:
+      - "${COMPOSE_PATH_WAVS_HOME:-}:/wavs-home"
+    network_mode: "host"

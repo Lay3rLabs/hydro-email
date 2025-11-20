@@ -1,0 +1,23 @@
+name: "wavs-telemetry"
+services:
+  jaeger:
+    container_name: jaeger
+    image: "${COMPOSE_DOCKER_IMAGE_JAEGER:-}"
+    network_mode: "host"
+    stop_signal: SIGKILL
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - QUERY_HTTP_SERVER_HOST_PORT=:${COMPOSE_PORT_JAEGER_UI:-16686}
+
+  prometheus:
+    container_name: prometheus
+    image: "${COMPOSE_DOCKER_IMAGE_PROMETHEUS:-}"
+    network_mode: "host"
+    stop_signal: SIGTERM
+    stop_grace_period: 3s
+    volumes:
+      - ./wavs-telemetry-prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-otlp-receiver"
+      - "--web.listen-address=:${COMPOSE_PORT_PROMETHEUS_UI:-9090}"
