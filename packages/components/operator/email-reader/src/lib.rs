@@ -5,6 +5,7 @@ mod email;
 mod error;
 
 use anyhow::bail;
+use app_contract_api::service_handler::msg::{CustomExecuteMsg, Email};
 use cfdkim::verify_email_with_resolver;
 
 use crate::{email::verify::verify_email, wavs::operator::input::TriggerData};
@@ -38,6 +39,37 @@ impl Guest for Component {
 
 async fn inner(trigger_action: TriggerAction) -> anyhow::Result<Vec<WasmResponse>> {
     match trigger_action.data {
+        TriggerData::Cron(_) => {
+            // TODO - read a batch instead of just one email
+            let email = match email::read_next_email().await? {
+                Some(email) => email,
+                None => {
+                    return Ok(Vec::new());
+                }
+            };
+
+            verify_email(&email).await?;
+
+            // For right now, treat each email as its own event
+            let event_id_salt = {
+                use sha2::{Digest, Sha256};
+
+                let mut hasher = Sha256::new();
+                hasher.update(&email.raw_bytes);
+                hasher.finalize().to_vec()
+            };
+
+            return Ok(vec![WasmResponse {
+                payload: CustomExecuteMsg::Email(Email {
+                    from: email.original_sender,
+                    subject: email.subject.unwrap_or_default(),
+                })
+                .encode()
+                .map_err(|e| anyhow::anyhow!("{e:?}"))?,
+                ordering: None,
+                event_id_salt: Some(event_id_salt),
+            }]);
+        }
         TriggerData::Raw(data) => {
             let data = std::str::from_utf8(&data)?;
             match data {

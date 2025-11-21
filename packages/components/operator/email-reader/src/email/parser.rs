@@ -10,9 +10,9 @@ pub struct EmailMessage {
     // 1) "Original sender" best-effort (From / Resent-From / Sender / envelope)
     pub original_sender: String,
     // 2) All DKIM-Signature header values (there can be multiple)
-    dkim_signatures: Vec<String>,
+    pub dkim_signatures: Vec<String>,
     // 3) Subject (decoded)
-    subject: Option<String>,
+    pub subject: Option<String>,
     // 4) Body (best-effort: prefer text/plain part; fall back to full text)
     pub body_text: Option<String>,
     // 5) Raw email bytes (can be parsed on demand)

@@ -10,26 +10,62 @@
 8. Download the latest WIT definitions: `task components:fetch-wit`
 9. Copy `.example.env` to `.env` and replace the values
 
-## Summary
+## TL;DR
 
-Start all backend services
+1. Build all contracts, components, and schema
+
 ```bash
-# Alternatively, if you need more than one operator
-# task backend:start-all OPERATORS=3
-task backend:start-all
+task build-all
 ```
 
-_... do stuff ..._
+2. Start all backend services
 
-Stop all backend services
+```bash
+task backend:start-all
+
+# Alternatively, if you need more than one operator
+# 
+# task backend:start-all OPERATORS=3
+```
+
+3. Tap the faucet for all the mnemonics
+
+```bash
+task deploy:tap-faucet-all
+```
+
+4. Deploy everything
+
+```bash
+task deploy:all
+
+# Alternatively, skip uploading contracts, middleware, and/or components
+# this assumes they were already uploaded before and the output files exist
+# 
+# task deploy:all SKIP_UPLOAD_CONTRACTS=true SKIP_UPLOAD_COMPONENTS=true SKIP_UPLOAD_MIDDLEWARE=true
+```
+
+5. Send an email to the operator email address
+
+See [LocalEmail](./LocalEmail.md) for using the local email server for testing, otherwise, use a real email server
+
+6. Check the on-chain results
+
+```bash
+task contracts:query-service-handler-emails
+```
+
+7. When done, stop all backend services
+
 ```bash
 task backend:stop-all
 ```
 
-But "do stuff" assumes you've build and tested all the contracts and components
-and sometimes you only want to start/stop parts of the backend
+Each of these steps can be done individually and with more granularity as needed.
 
-So, with that in mind...
+Let's step through each of these:
+
+
 
 ## Building
 

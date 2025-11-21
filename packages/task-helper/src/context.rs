@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
+use app_client::{address::AnyAddr, service_handler::ServiceHandlerQuerier};
 use app_utils::{config::load_chain_configs_from_wavs, path::repo_root};
 use clap::Parser;
 use layer_climb::prelude::*;
+use wavs_types::ChainKey;
 
 use crate::command::{CliArgs, CliCommand};
 
@@ -32,7 +34,15 @@ impl CliContext {
             CliCommand::OperatorAddService { args, .. } => args,
             CliCommand::OperatorDeleteService { args, .. } => args,
             CliCommand::OperatorSetSigningKey { args, .. } => args,
+            CliCommand::QueryServiceHandlerEmails { args, .. } => args,
         }
+    }
+
+    pub fn chain_key(&self) -> ChainKey {
+        self.args()
+            .chain
+            .clone()
+            .expect("--chain <chain-key> is required")
     }
 
     pub async fn chain_config(&self) -> Result<ChainConfig> {
@@ -43,9 +53,9 @@ impl CliContext {
         .expect("Failed to load chain configurations");
 
         let chain_config = chain_configs
-            .get_chain(&self.args().chain)
+            .get_chain(&self.chain_key())
             .clone()
-            .context(format!("Chain config not found for {}", self.args().chain))?
+            .context(format!("Chain config not found for {}", self.chain_key()))?
             .to_cosmos_config()?;
 
         Ok(chain_config.into())
@@ -65,6 +75,14 @@ impl CliContext {
 
     pub async fn query_client(&self) -> Result<QueryClient> {
         QueryClient::new(self.chain_config().await?, None).await
+    }
+
+    pub async fn service_handler_querier(
+        &self,
+        addr: impl Into<AnyAddr>,
+    ) -> Result<ServiceHandlerQuerier> {
+        let query_client = self.query_client().await?;
+        Ok(ServiceHandlerQuerier::new(query_client.into(), addr.into()))
     }
 
     pub async fn signing_client(&self) -> Result<SigningClient> {

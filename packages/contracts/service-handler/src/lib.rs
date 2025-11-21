@@ -99,7 +99,7 @@ pub fn execute(
                     .map_err(|e| ContractError::AbiDecode(e.to_string()))?;
 
                 let msg = CustomExecuteMsg::decode(&envelope.payload)
-                    .map_err(|e| ContractError::AbiDecode(e.to_string()))?;
+                    .map_err(|e| ContractError::PayloadDecode(e.to_string()))?;
 
                 handle_custom_message(deps.storage, msg)
             }

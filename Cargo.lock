@@ -633,6 +633,7 @@ name = "app-component-operator-email-reader"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "app-contract-api",
  "cfdkim",
  "cfg-if",
  "futures",
@@ -641,6 +642,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
+ "sha2 0.10.9",
  "sloggers",
  "thiserror 2.0.17",
  "tokio",

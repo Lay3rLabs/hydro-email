@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, CheckedFromRatioError, DecimalRangeExceeded, OverflowError, StdError};
+use cosmwasm_std::{CheckedFromRatioError, DecimalRangeExceeded, OverflowError, StdError};
 use cw_utils::PaymentError;
 use thiserror::Error;
 
@@ -22,21 +22,12 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized,
 
-    #[error("Trying to send 0 tokens")]
-    ZeroSend,
-
-    #[error("TG Handle {0} is already registered")]
-    TgAlreadyRegistered(String),
-
-    #[error("Address {0} is already registered")]
-    AddrAlreadyRegistered(Addr),
-
-    #[error("Token not whitelisted: {token}")]
-    TokenNotWhitelisted { token: String },
-
     #[error("Unknown reply id: {id}")]
     UnknownReplyId { id: u64 },
 
     #[error("ABI decode: {0}")]
     AbiDecode(String),
+
+    #[error("Payload decode: {0}")]
+    PayloadDecode(String),
 }
