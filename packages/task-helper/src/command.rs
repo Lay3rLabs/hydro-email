@@ -1,5 +1,4 @@
-use crate::output::OutputFormat;
-use app_utils::path::repo_root;
+use crate::{config::path_builds, output::OutputFormat};
 use clap::{Parser, ValueEnum};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -147,10 +146,23 @@ pub enum CliCommand {
         weight: String,
 
         #[arg(long)]
-        wavs_instance: u32,
-
-        #[arg(long)]
         wavs_url: Url,
+
+        #[clap(flatten)]
+        args: CliArgs,
+    },
+    QueryServiceHandlerEmails {
+        /// The address of the service handler contract
+        #[arg(long)]
+        address: String,
+
+        /// The maximum number of emails to return
+        #[arg(long)]
+        limit: Option<u32>,
+
+        /// Cursor for pagination
+        #[arg(long)]
+        start_after: Option<u64>,
 
         #[clap(flatten)]
         args: CliArgs,
@@ -160,13 +172,13 @@ pub enum CliCommand {
 // common args for several commands
 #[derive(Clone, Debug, Parser)]
 pub struct CliArgs {
-    #[clap(long, default_value = "cosmos:pion-1")]
-    pub chain: ChainKey,
+    #[clap(long)]
+    pub chain: Option<ChainKey>,
 
     /// Filename for outputting any generated files
-    /// which will be written in to `builds/cli/`
-    #[clap(long, default_value = "output.json")]
-    pub output_filename: String,
+    /// which will be written in to the deployments directory
+    #[clap(long)]
+    pub output_file: Option<String>,
 
     /// Output format for any generated files
     #[clap(long, value_enum, default_value_t = OutputFormat::Json)]
@@ -194,9 +206,7 @@ impl ContractKind {
     }
     pub async fn wasm_bytes(&self) -> Vec<u8> {
         let filename = self.as_str().replace('-', "_");
-        let path = repo_root()
-            .unwrap()
-            .join(".builds")
+        let path = path_builds()
             .join("contracts")
             .join(format!("app_contract_{filename}.wasm"));
 
@@ -252,9 +262,7 @@ impl ComponentKind {
     }
     pub async fn wasm_bytes(&self, name: &str) -> Vec<u8> {
         let filename = name.replace('-', "_");
-        let path = repo_root()
-            .unwrap()
-            .join(".builds")
+        let path = path_builds()
             .join("components")
             .join(format!("app_component_{}_{filename}.wasm", self.as_str()));
 

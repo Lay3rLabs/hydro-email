@@ -1,15 +1,16 @@
 use anyhow::Result;
-use app_utils::path::repo_root;
 use clap::ValueEnum;
 use layer_climb::prelude::EvmAddr;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use wavs_types::{ComponentDigest, ServiceDigest};
 
-use crate::command::{CliArgs, ComponentKind, ContractKind};
+use crate::{
+    command::{CliArgs, ComponentKind, ContractKind},
+    config::path_deployments,
+};
 
 pub struct Output {
-    pub output_filename: String,
+    pub file: String,
     pub format: OutputFormat,
 }
 
@@ -22,7 +23,10 @@ pub enum OutputFormat {
 impl CliArgs {
     pub fn output(&self) -> Output {
         Output {
-            output_filename: self.output_filename.clone(),
+            file: self
+                .output_file
+                .clone()
+                .expect("--output-file <filename> is required"),
             format: self.output_format,
         }
     }
@@ -30,8 +34,8 @@ impl CliArgs {
 
 impl Output {
     pub async fn write(&self, data: impl Serialize) -> Result<()> {
-        let directory = self.directory();
-        let file = directory.join(&self.output_filename);
+        let directory = path_deployments();
+        let file = directory.join(&self.file);
 
         // Ensure the output directory exists
         std::fs::create_dir_all(&directory).unwrap_or_else(|_| {
@@ -47,13 +51,6 @@ impl Output {
         tracing::info!("Output written to {}", file.display());
 
         Ok(())
-    }
-
-    pub fn directory(&self) -> PathBuf {
-        repo_root()
-            .expect("could not determine repo root")
-            .join("builds")
-            .join("deployments")
     }
 }
 

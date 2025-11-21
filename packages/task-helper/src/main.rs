@@ -1,4 +1,5 @@
 mod command;
+mod config;
 mod context;
 mod ipfs;
 mod output;
@@ -17,6 +18,7 @@ use wavs_types::{
 
 use crate::{
     command::{AuthKind, CliCommand, ContractKind},
+    config::path_deployments,
     context::CliContext,
     ipfs::IpfsFile,
     output::{
@@ -39,7 +41,6 @@ async fn main() {
             service_manager_address,
             evm_operator_address,
             stake_registry_address,
-            wavs_instance,
             weight,
             wavs_url,
             args,
@@ -49,7 +50,7 @@ async fn main() {
             let stake_registry_address = ctx.parse_address(&stake_registry_address).await.unwrap();
 
             let service_manager = ServiceManager::Cosmos {
-                chain: ctx.args().chain.clone(),
+                chain: ctx.chain_key(),
                 address: service_manager_address.clone().try_into().unwrap(),
             };
 
@@ -129,16 +130,7 @@ async fn main() {
 
             let stake_registry_tx_hash = tx_resp.txhash;
 
-            let mut output = args.output();
-
-            output.output_filename =
-                if let Some((name, ext)) = output.output_filename.rsplit_once('.') {
-                    format!("{name}-{wavs_instance}.{ext}")
-                } else {
-                    format!("{}-{wavs_instance}", output.output_filename)
-                };
-
-            output
+            args.output()
                 .write(OutputOperatorSetSigningKey {
                     service_manager_tx_hash,
                     stake_registry_tx_hash,
@@ -316,7 +308,7 @@ async fn main() {
             aggregator_url,
             activate,
         } => {
-            let output_directory = args.output().directory();
+            let output_directory = path_deployments();
 
             let contract_service_handler_instantiation_file =
                 output_directory.join(contract_service_handler_instantiation_file);
@@ -429,7 +421,7 @@ async fn main() {
                         "SERVICE_HANDLER_CONTRACT_ADDRESS".to_string(),
                         contract_service_handler.address.clone(),
                     ),
-                    ("CHAIN".to_string(), args.chain.to_string()),
+                    ("CHAIN".to_string(), ctx.chain_key().to_string()),
                 ]
                 .into_iter()
                 .collect(),
@@ -459,7 +451,7 @@ async fn main() {
                     wavs_types::ServiceStatus::Paused
                 },
                 manager: ServiceManager::Cosmos {
-                    chain: args.chain.clone(),
+                    chain: ctx.chain_key(),
                     address: middleware_instantiation
                         .service_manager_address
                         .parse()
@@ -502,13 +494,13 @@ async fn main() {
             println!("Service Gateway URL: {}\n", gateway_url);
         }
         CliCommand::AggregatorRegisterService {
-            args,
+            args: _,
             service_manager_address,
             aggregator_url,
         } => {
             let req = wavs_types::aggregator::RegisterServiceRequest {
                 service_manager: ServiceManager::Cosmos {
-                    chain: args.chain,
+                    chain: ctx.chain_key(),
                     address: service_manager_address.parse().unwrap(),
                 },
             };
@@ -524,13 +516,13 @@ async fn main() {
         }
 
         CliCommand::OperatorAddService {
-            args,
+            args: _,
             service_manager_address,
             wavs_url,
         } => {
             let req = wavs_types::AddServiceRequest {
                 service_manager: ServiceManager::Cosmos {
-                    chain: args.chain,
+                    chain: ctx.chain_key(),
                     address: service_manager_address.parse().unwrap(),
                 },
             };
@@ -546,13 +538,13 @@ async fn main() {
         }
 
         CliCommand::OperatorDeleteService {
-            args,
+            args: _,
             service_manager_address,
             wavs_url,
         } => {
             let req = wavs_types::DeleteServicesRequest {
                 service_managers: vec![ServiceManager::Cosmos {
-                    chain: args.chain,
+                    chain: ctx.chain_key(),
                     address: service_manager_address.parse().unwrap(),
                 }],
             };
@@ -565,6 +557,21 @@ async fn main() {
                 .unwrap()
                 .error_for_status()
                 .unwrap();
+        }
+        CliCommand::QueryServiceHandlerEmails {
+            address,
+            args: _,
+            limit,
+            start_after,
+        } => {
+            let address = ctx.parse_address(&address).await.unwrap();
+            let client = ctx.service_handler_querier(address).await.unwrap();
+
+            let emails = client.emails(limit, start_after).await.unwrap();
+
+            println!("{:#?}\n", emails);
+
+            println!("{} emails", emails.len());
         }
     }
 }

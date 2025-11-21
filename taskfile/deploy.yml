@@ -16,26 +16,149 @@ tasks:
   ###################################################################
 
   all:
-    deps: [all-upload-contracts, all-upload-components]
+    deps: [all-upload-contracts-and-middleware, components-upload-all]
     cmds:
       - task: middleware-instantiate
         vars:
           MANAGER_CODE_ID:
-            sh: cat "{{.PATH_DEPLOYMENTS}}/service-manager-code-id.json" | jq -r '.code_id'
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_SERVICE_MANAGER_CODE_ID}}" | jq -r '.code_id'
           REGISTRY_CODE_ID:
-            sh: cat "{{.PATH_DEPLOYMENTS}}/stake-registry-code-id.json" | jq -r '.code_id'
-          FILENAME: middleware.json
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_STAKE_REGISTRY_CODE_ID}}" | jq -r '.code_id'
+          FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}"
+      - task: contract-instantiate-service-handler
+        vars:
+          CODE_ID:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_CODE_ID}}" | jq -r '.code_id'
+          FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}"
+      - task: service-upload-and-set-uri
+        vars:
+          ACTIVATE: "true"
+      - task: aggregator-register-service
+        vars:
+          ADDR:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
+      - task: operator-add-service
+        vars:
+          ADDR:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
+      - task: middleware-operator-set-signing-key
+        vars:
+          WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
+          FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_SIGNING_KEY}}"
+      - echo ""
+      - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
+      - echo ""
+      - task: post-deploy-all
+
+  post-deploy-all:
+    vars:
+      SERVICE_URI:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.uri'
+      SERVICE_GATEWAY_URL:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.gateway_url'
+      SERVICE_MANAGER:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
+    cmds:
+      - |
+        echo "Service Manager Address: {{.SERVICE_MANAGER}}"
+      - |
+        echo "Service URI: {{.SERVICE_URI}}"
+      - |
+        echo "Service URL: {{.SERVICE_GATEWAY_URL}}"
+
+  all-upload-contracts-and-middleware:
+    cmds:
+      # These need to be done serially to avoid sequence errors
+      - task: contracts-upload-all
+      - task: middleware-upload-all
+
+  ###################################################################
+  ######################## SERVICE ##################################
+  ###################################################################
+  service-activate:
+    vars:
+      ACTIVATE: "true"
+    cmds:
+      - task: service-upload-and-set-uri
+
+  service-upload-and-set-uri:
+    required:
+      vars: [ACTIVATE]
+    cmds:
+      - task: service-upload
+        vars:
+          PATH_CONTRACT_SERVICE_HANDLER_INSTANTIATE: "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}"
+          PATH_MIDDLEWARE_INSTANTIATE: "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}"
+          PATH_COMPONENT_OPERATOR_EMAIL_READER_CID: "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_COMPONENT_OPERATOR_EMAIL_READER_CID}}"
+          PATH_COMPONENT_AGGREGATOR_SUBMITTER_CID: "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_COMPONENT_AGGREGATOR_SUBMITTER_CID}}"
+          FILENAME: "{{.DEPLOY_FILENAME_SERVICE_CID}}"
+          ACTIVATE: "{{.ACTIVATE}}"
+      - task: middleware-set-service-uri
+        vars:
+          ADDR:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
+          URI:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.gateway_url'
+  service-upload:
+    requires:
+      vars:
+        [
+          PATH_CONTRACT_SERVICE_HANDLER_INSTANTIATE,
+          PATH_MIDDLEWARE_INSTANTIATE,
+          PATH_COMPONENT_OPERATOR_EMAIL_READER_CID,
+          PATH_COMPONENT_AGGREGATOR_SUBMITTER_CID,
+          FILENAME,
+          ACTIVATE,
+        ]
+    vars:
+      IPFS_API_URL: "http://127.0.0.1:{{.PORT_IPFS_API}}"
+      IPFS_GATEWAY_URL: "http://127.0.0.1:{{.PORT_IPFS_GATEWAY}}"
+      AGGREGATOR_URL: "http://127.0.0.1:{{.PORT_WAVS_AGGREGATOR}}"
+    cmds:
+      - echo "Uploading Service JSON to IPFS ..."
+      - >
+        task helper-exec -- upload-service
+        --output-file={{.FILENAME}}
+        --ipfs-api-url={{.IPFS_API_URL}}
+        --ipfs-gateway-url={{.IPFS_GATEWAY_URL}}
+        --contract-service-handler-instantiation-file="{{.PATH_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}"
+        --middleware-instantiation-file="{{.PATH_MIDDLEWARE_INSTANTIATE}}"
+        --component-operator-email-reader-cid-file="{{.PATH_COMPONENT_OPERATOR_EMAIL_READER_CID}}"
+        --component-aggregator-submitter-cid-file="{{.PATH_COMPONENT_AGGREGATOR_SUBMITTER_CID}}"
+        --trigger-cron-schedule="{{.SERVICE_CRON_SCHEDULE}}"
+        --aggregator-url={{.AGGREGATOR_URL}}
+        --chain={{.CHAIN_KEY}}
+        {{ if eq .ACTIVATE "true" }} --activate {{ end }}
+      - echo "🚀 Uploaded Service JSON to IPFS and saved info to {{.FILENAME}}"
 
   ###################################################################
   ######################## MIDDLEWARE ###############################
   ###################################################################
+  middleware-upload-all:
+    cmds:
+      - task: log-skip-upload-middleware
+      - task: middleware-upload-all-inner
 
-  middleware-service-manager-upload:
+  middleware-upload-all-inner:
+    internal: true
+    cmds:
+      - task: middleware-upload-service-manager
+        vars:
+          FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_SERVICE_MANAGER_CODE_ID}}"
+      - task: middleware-upload-stake-registry
+        vars:
+          FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_STAKE_REGISTRY_CODE_ID}}"
+
+  middleware-upload-service-manager:
     deps: [assert-account-exists]
     requires:
       vars: [FILENAME]
+    vars:
+      SKIP_UPLOAD_CONTRACTS: '{{ .SKIP_UPLOAD_CONTRACTS | default "false" }}'
+    status:
+      - '[ "{{.SKIP_UPLOAD_CONTRACTS}}" = "true" ]'
     cmds:
-      - echo "🚀 Uploading middleware service-manager contract..."
+      - echo "Uploading middleware service-manager contract..."
       - mkdir -p "{{.PATH_DEPLOYMENTS}}"
       - >
         docker run --rm
@@ -48,13 +171,18 @@ tasks:
         {{.DOCKER_IMAGE_WAVS_CW_MIDDLEWARE}}
         service-manager upload --contract-kind mirror
         --output-path "/output/{{.FILENAME}}"
+      - echo "🚀 Uploaded middleware service-manager contract and saved info to {{.FILENAME}}"
 
-  middleware-stake-registry-upload:
+  middleware-upload-stake-registry:
     deps: [assert-account-exists]
     requires:
       vars: [FILENAME]
+    vars:
+      SKIP_UPLOAD_CONTRACTS: '{{ .SKIP_UPLOAD_CONTRACTS | default "false" }}'
+    status:
+      - '[ "{{.SKIP_UPLOAD_CONTRACTS}}" = "true" ]'
     cmds:
-      - echo "🚀 Uploading middleware stake-registry contract..."
+      - echo "Uploading middleware stake-registry contract..."
       - mkdir -p "{{.PATH_DEPLOYMENTS}}"
       - >
         docker run --rm
@@ -67,6 +195,7 @@ tasks:
         {{.DOCKER_IMAGE_WAVS_CW_MIDDLEWARE}}
         registry upload --contract-kind mirror_stake
         --output-path "/output/{{.FILENAME}}"
+      - echo "🚀 Uploaded middleware stake-registry contract and saved info to {{.FILENAME}}"
 
   middleware-instantiate:
     deps: [assert-account-exists]
@@ -76,7 +205,7 @@ tasks:
       THRESHOLD: "{{.THRESHOLD | default .DEFAULT_MIDDLEWARE_THRESHOLD}}"
       STRATEGIES: "{{.STRATEGIES | default .DEFAULT_MIDDLEWARE_STRATEGIES}}"
     cmds:
-      - echo "🚀 Instantiating middleware contracts..."
+      - echo "Instantiating middleware contracts..."
       - mkdir -p "{{.PATH_DEPLOYMENTS}}"
       - >
         docker run --rm
@@ -93,11 +222,32 @@ tasks:
         --threshold-weight {{.THRESHOLD}}
         --strategy {{.STRATEGIES}}
         --output-path "/output/{{.FILENAME}}"
+      - echo "🚀 Instantiated middleware contracts and saved info to {{.FILENAME}}"
+
+  middleware-set-service-uri:
+    deps: [assert-account-exists]
+    requires:
+      vars: [ADDR, URI]
+    cmds:
+      - echo "Setting Service URI on service-manager contract..."
+      - >
+        docker run --rm
+        --network host
+        -v "{{.PATH_WAVS_HOME}}":/wavs-home:ro
+        -v "{{.PATH_DEPLOYMENTS}}":/output
+        -e CHAIN_KEY="{{.CHAIN_KEY}}"
+        -e WAVS_HOME="/wavs-home"
+        -e CLI_MNEMONIC="{{.CLI_MNEMONIC}}"
+        {{.DOCKER_IMAGE_WAVS_CW_MIDDLEWARE}}
+        service-manager set-service-uri
+        --address "{{.ADDR}}"
+        --uri "{{.URI}}"
+      - echo "🚀 Set Service URI {{.URI}} on service-manager {{.ADDR}}"
 
   ###################################################################
-  ################### OPERATOR / STAKE REGISTRY #####################
+  ################### MIDDLEWARE / STAKE REGISTRY #####################
   ###################################################################
-  operator-set-signing-key:
+  middleware-operator-set-signing-key:
     requires:
       vars: [FILENAME]
     vars:
@@ -105,68 +255,145 @@ tasks:
         sh: seq 1 {{.OPERATORS | default "1"}}
     cmds:
       - for: { var: OPERATORS_RANGE }
-        task: operator-set-signing-key-{{.ITEM}}
+        task: middleware-operator-set-signing-key-{{.ITEM}}
         vars:
           WEIGHT: "{{.WEIGHT}}"
           FILENAME: "{{.FILENAME}}"
 
-  operator-set-signing-key-*:
+  middleware-operator-set-signing-key-*:
     deps: [assert-account-exists]
     requires:
       vars: [WEIGHT, FILENAME]
     vars:
-      WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
       WAVS_INSTANCE: "{{index .MATCH 0}}"
+      FILENAME: '{{trimSuffix ".json" .FILENAME}}-{{.WAVS_INSTANCE}}.json'
+      WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
       OPERATOR_MNEMONIC:
         sh: task backend:get-wavs-operator-mnemonic-{{.WAVS_INSTANCE}}
       EVM_OPERATOR_ADDRESS:
         sh: cast wallet address --mnemonic "{{.OPERATOR_MNEMONIC}}"
       SERVICE_MANAGER_ADDRESS:
-        sh: cat "{{.PATH_DEPLOYMENTS}}/middleware.json" | jq -r '.service_manager_address'
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}" | jq -r '.service_manager_address'
       STAKE_REGISTRY_ADDRESS:
-        sh: cat "{{.PATH_DEPLOYMENTS}}/middleware.json" | jq -r '.registry_address'
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}" | jq -r '.registry_address'
       WAVS_PORT:
         sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
       WAVS_URL: "http://127.0.0.1:{{.WAVS_PORT}}"
     cmds:
-      - echo "🚀 Setting signing key on service manager {{.SERVICE_MANAGER_ADDRESS}}..."
+      - echo "Setting signing key on service manager {{.SERVICE_MANAGER_ADDRESS}}..."
       - >
-        cd packages/cli && cargo run operator-set-signing-key
-        --wavs-instance={{.WAVS_INSTANCE}}
-        --output-filename={{.FILENAME}}
+        task helper-exec -- operator-set-signing-key
+        --output-file={{.FILENAME}}
         --service-manager-address={{.SERVICE_MANAGER_ADDRESS}}
         --stake-registry-address={{.STAKE_REGISTRY_ADDRESS}}
         --evm-operator-address={{.EVM_OPERATOR_ADDRESS}}
         --wavs-url={{.WAVS_URL}}
         --weight={{.WEIGHT}}
+        --chain={{.CHAIN_KEY}}
+      - echo "🚀 Set signing key for operator {{.WAVS_INSTANCE}} and saved info to {{.FILENAME}}"
+
+  ###################################################################
+  ##################### OPERATOR / SERVICE ##########################
+  ###################################################################
+  operator-add-service:
+    vars:
+      OPERATORS_RANGE:
+        sh: seq 1 {{.OPERATORS | default "1"}}
+      ADDR_FROM_FILE:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
+      ADDR: "{{.ADDR | default .ADDR_FROM_FILE}}"
+    cmds:
+      - for: { var: OPERATORS_RANGE }
+        task: operator-add-service-{{.ITEM}}-{{.ADDR}}
+
+  operator-add-service-*-*:
+    vars:
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+      ADDR: "{{index .MATCH 1}}"
+      WAVS_PORT:
+        sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
+      WAVS_URL: "http://127.0.0.1:{{.WAVS_PORT}}"
+    cmds:
+      - echo "Adding service to operator {{.WAVS_INSTANCE}}..."
+      - >
+        task helper-exec -- operator-add-service
+        --wavs-url {{.WAVS_URL}}
+        --service-manager-address "{{.ADDR}}"
+        --chain={{.CHAIN_KEY}}
+      - echo "🚀 Added service for operator {{.WAVS_INSTANCE}}"
+
+  operator-delete-service:
+    vars:
+      OPERATORS_RANGE:
+        sh: seq 1 {{.OPERATORS | default "1"}}
+      ADDR_FROM_FILE:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
+      ADDR: "{{.ADDR | default .ADDR_FROM_FILE}}"
+    cmds:
+      - for: { var: OPERATORS_RANGE }
+        task: operator-delete-service-{{.ITEM}}-{{.ADDR}}
+
+  operator-delete-service-*-*:
+    vars:
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+      ADDR: "{{index .MATCH 1}}"
+      WAVS_PORT:
+        sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
+      WAVS_URL: "http://127.0.0.1:{{.WAVS_PORT}}"
+    cmds:
+      - echo "Deleting service for operator {{.WAVS_INSTANCE}}..."
+      - >
+        task helper-exec -- operator-delete-service
+        --wavs-url {{.WAVS_URL}}
+        --service-manager-address "{{.ADDR}}"
+        --chain={{.CHAIN_KEY}}
+
+  ###################################################################
+  ################### AGGREGATOR ####################################
+  ###################################################################
+
+  aggregator-register-service:
+    requires:
+      vars: [ADDR]
+    vars:
+      AGGREGATOR_URL: "http://127.0.0.1:{{.PORT_WAVS_AGGREGATOR}}"
+    cmds:
+      - echo "Registering service on aggregator..."
+      - >
+        task helper-exec -- aggregator-register-service
+        --aggregator-url {{.AGGREGATOR_URL}}
+        --service-manager-address "{{.ADDR}}"
+        --chain={{.CHAIN_KEY}}
+      - echo "🚀 Registered service on aggregator"
 
   ###################################################################
   ######################## CONTRACTS #################################
   ###################################################################
-  all-upload-contracts:
-    vars:
-      SKIP_UPLOAD_CONTRACTS: '{{ .SKIP_UPLOAD_CONTRACTS | default "false" }}'
-    status:
-      - '[ "{{.SKIP_UPLOAD_CONTRACTS}}" = "true" ]'
+  contracts-upload-all:
     cmds:
-      - task: middleware-service-manager-upload
-        vars:
-          FILENAME: service-manager-code-id.json
-      - task: middleware-stake-registry-upload
-        vars:
-          FILENAME: stake-registry-code-id.json
+      - task: log-skip-upload-contracts
+      - task: contracts-upload-all-inner
+
+  contracts-upload-all-inner:
+    internal: true
+    cmds:
       - task: contract-upload
         vars:
           CONTRACT: service-handler
-          FILENAME: service-handler-code-id.json
+          FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_CODE_ID}}"
 
   contract-upload:
     deps: [assert-account-exists]
     requires:
       vars: [CONTRACT, FILENAME]
+    vars:
+      SKIP_UPLOAD_CONTRACTS: '{{ .SKIP_UPLOAD_CONTRACTS | default "false" }}'
+    status:
+      - '[ "{{.SKIP_UPLOAD_CONTRACTS}}" = "true" ]'
     cmds:
-      - echo "🚀 Uploading contract {{.CONTRACT}}..."
-      - task helper-exec -- upload-contract --kind {{.CONTRACT}} --output-filename={{.FILENAME}}
+      - echo "Uploading contract {{.CONTRACT}}..."
+      - task helper-exec -- upload-contract --kind {{.CONTRACT}} --output-file={{.FILENAME}} --chain={{.CHAIN_KEY}}
+      - echo "🚀 Uploaded contract {{.CONTRACT}} and saved info to {{.FILENAME}}"
 
   contract-instantiate-service-handler:
     deps: [assert-account-exists]
@@ -174,31 +401,34 @@ tasks:
       vars: [FILENAME, CODE_ID]
     vars:
       AUTH_ADDRESS:
-        sh: cat "{{.PATH_DEPLOYMENTS}}/middleware.json" | jq -r '.service_manager_address'
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}" | jq -r '.service_manager_address'
       AUTH_KIND: "service_manager"
     cmds:
-      - echo "🚀 Instantiating Service Handler contract..."
-      - task helper-exec -- instantiate-service-handler --output-filename={{.FILENAME}} --code-id={{.CODE_ID}} --auth-address={{.AUTH_ADDRESS}} --auth-kind={{.AUTH_KIND}}
+      - echo "Instantiating Service Handler contract..."
+      - task helper-exec -- instantiate-service-handler --output-file={{.FILENAME}} --code-id={{.CODE_ID}} --auth-address={{.AUTH_ADDRESS}} --auth-kind={{.AUTH_KIND}} --chain={{.CHAIN_KEY}}
+      - echo "🚀 Instantiated Service Handler contract and saved info to {{.FILENAME}}"
 
   ###################################################################
   ######################## COMPONENTS ###############################
   ###################################################################
-  all-upload-components:
-    vars:
-      SKIP_UPLOAD_COMPONENTS: '{{ .SKIP_UPLOAD_COMPONENTS | default "false" }}'
-    status:
-      - '[ "{{.SKIP_UPLOAD_COMPONENTS}}" = "true" ]'
+  components-upload-all:
+    cmds:
+      - task: log-skip-upload-components
+      - task: components-upload-all-inner
+
+  components-upload-all-inner:
+    internal: true
     cmds:
       - task: component-upload
         vars:
           COMPONENT: email-reader
           KIND: operator
-          FILENAME: operator-email-reader-cid.json
+          FILENAME: "{{.DEPLOY_FILENAME_COMPONENT_OPERATOR_EMAIL_READER_CID}}"
       - task: component-upload
         vars:
           COMPONENT: submitter
           KIND: aggregator
-          FILENAME: aggregator-submitter-cid.json
+          FILENAME: "{{.DEPLOY_FILENAME_COMPONENT_AGGREGATOR_SUBMITTER_CID}}"
 
   component-upload:
     requires:
@@ -206,9 +436,13 @@ tasks:
     vars:
       IPFS_API_URL: "http://127.0.0.1:{{.PORT_IPFS_API}}"
       IPFS_GATEWAY_URL: "http://127.0.0.1:{{.PORT_IPFS_GATEWAY}}"
+      SKIP_UPLOAD_COMPONENTS: '{{ .SKIP_UPLOAD_COMPONENTS | default "false" }}'
+    status:
+      - '[ "{{.SKIP_UPLOAD_COMPONENTS}}" = "true" ]'
     cmds:
-      - echo "🚀 Uploading component {{.COMPONENT}} to IPFS..."
-      - task helper-exec -- upload-component --kind {{.KIND}} --component {{.COMPONENT}} --output-filename={{.FILENAME}} --ipfs-api-url {{.IPFS_API_URL}} --ipfs-gateway-url {{.IPFS_GATEWAY_URL}}
+      - echo "Uploading component {{.COMPONENT}} to IPFS..."
+      - task helper-exec -- upload-component --kind {{.KIND}} --component {{.COMPONENT}} --output-file={{.FILENAME}} --ipfs-api-url {{.IPFS_API_URL}} --ipfs-gateway-url {{.IPFS_GATEWAY_URL}} --chain={{.CHAIN_KEY}}
+      - echo "🚀 Uploaded component {{.COMPONENT}} to IPFS, saved info to {{.FILENAME}}"
 
   ###################################################################
   ######################## FAUCET   #################################
@@ -235,8 +469,42 @@ tasks:
     env:
       CLI_MNEMONIC: "{{.MNEMONIC_VALUE}}"
     cmds:
-      - task helper-exec -- faucet-tap
+      - task helper-exec -- faucet-tap --chain={{.CHAIN_KEY}}
 
   assert-account-exists:
     cmds:
-      - task helper-exec -- assert-account-exists
+      - task helper-exec -- assert-account-exists --chain={{.CHAIN_KEY}}
+
+  ###################################################################
+  ######################## INFORMATIVE-ONLY #########################
+  ###################################################################
+
+  log-skip-upload-middleware:
+    vars:
+      SKIP_UPLOAD_MIDDLEWARE: '{{ .SKIP_UPLOAD_MIDDLEWARE | default "false" }}'
+    status:
+      - '[ "{{.SKIP_UPLOAD_MIDDLEWARE}}" != "true" ]'
+    cmds:
+      - echo ""
+      - echo "ℹ️  Skipping middleware uploads."
+      - echo ""
+
+  log-skip-upload-contracts:
+    vars:
+      SKIP_UPLOAD_CONTRACTS: '{{ .SKIP_UPLOAD_CONTRACTS | default "false" }}'
+    status:
+      - '[ "{{.SKIP_UPLOAD_CONTRACTS}}" != "true" ]'
+    cmds:
+      - echo ""
+      - echo "ℹ️  Skipping contract uploads."
+      - echo ""
+
+  log-skip-upload-components:
+    vars:
+      SKIP_UPLOAD_COMPONENTS: '{{ .SKIP_UPLOAD_COMPONENTS | default "false" }}'
+    status:
+      - '[ "{{.SKIP_UPLOAD_COMPONENTS}}" != "true" ]'
+    cmds:
+      - echo ""
+      - echo "ℹ️  Skipping component uploads."
+      - echo ""
