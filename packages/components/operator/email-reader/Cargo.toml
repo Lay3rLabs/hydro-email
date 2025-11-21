@@ -11,6 +11,8 @@ rust-version = "1.90.0"
 crate-type = ["cdylib"]
 
 [dependencies]
+# Local
+app-contract-api = { workspace = true }
 
 # Error handling
 anyhow = { workspace = true }
@@ -40,6 +42,9 @@ futures = { workspace = true }
 imap = { workspace = true, default-features = false }
 mailparse = { workspace = true }
 cfdkim = { workspace = true}
+
+# Hashing
+sha2 = { workspace = true }
 
 # Security
 zeroize = { workspace = true }

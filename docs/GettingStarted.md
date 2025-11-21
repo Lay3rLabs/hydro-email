@@ -28,10 +28,10 @@ task backend:start-all
 # task backend:start-all OPERATORS=3
 ```
 
-3. Tap the faucet
+3. Tap the faucet for all the mnemonics
 
 ```bash
-task deploy:tap-faucet
+task deploy:tap-faucet-all
 ```
 
 4. Deploy everything

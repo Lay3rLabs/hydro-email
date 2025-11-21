@@ -52,8 +52,16 @@ vars:
   PORT_JAEGER_UI: 16686
   PORT_PROMETHEUS_UI: 9092
 
-  # Deployment chain
+  # Deployment
   CHAIN_KEY: "cosmos:pion-1"
+  ALL_MNEMONICS_TO_FUND:
+    [
+      "CLI_MNEMONIC",
+      "WAVS_OPERATOR_MNEMONIC_1",
+      "WAVS_OPERATOR_MNEMONIC_2",
+      "WAVS_AGGREGATOR_COSMOS_CREDENTIAL",
+    ]
+  COMPONENT_WITS_OPERATOR_COMMANDER: ["wavs:operator@2.0.0"]
 
   # Middleware
   DEFAULT_MIDDLEWARE_THRESHOLD: 100
