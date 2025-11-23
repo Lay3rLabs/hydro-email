@@ -86,6 +86,8 @@ pub fn execute(
             } => {
                 let service_manager = SERVICE_MANAGER.load(deps.storage)?;
 
+                // TODO: only allow eventId to be used once
+
                 deps.querier.query_wasm_smart::<WavsValidateResult>(
                     service_manager,
                     &ServiceManagerQueryMessages::WavsValidate {
