@@ -7,11 +7,12 @@ async fn get_admin() {
     tracing_init();
 
     let app_client = AppClient::new().await;
-    let payments = ServiceHandlerClient::new(app_client.clone(), None).await;
+    let service_handler = ServiceHandlerClient::new(app_client.clone(), None).await;
 
-    let admin = payments.querier.admin().await.unwrap().unwrap();
+    let admin = service_handler.querier.admin().await.unwrap().unwrap();
 
-    app_tests_common::shared_tests::service_handler::get_admin(&payments.querier, &admin).await;
+    app_tests_common::shared_tests::service_handler::get_admin(&service_handler.querier, &admin)
+        .await;
 }
 
 #[tokio::test]
