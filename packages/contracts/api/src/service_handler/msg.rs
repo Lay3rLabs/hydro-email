@@ -6,6 +6,8 @@ use wavs_types::contracts::cosmwasm::service_handler::{
 #[cw_serde]
 pub struct InstantiateMsg {
     pub auth: Auth,
+    /// The proxy contract address
+    pub proxy_address: String,
 }
 
 #[cw_serde]

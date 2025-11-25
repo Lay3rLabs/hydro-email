@@ -4,13 +4,14 @@ pub mod service_handler;
 use app_client::{executor::AnyExecutor, querier::AnyQuerier};
 use std::{cell::RefCell, rc::Rc};
 
-use cosmwasm_std::{Addr, Coin};
+use cosmwasm_std::{Addr, Api, CanonicalAddr, Coin};
 use cw_multi_test::App;
 
 #[derive(Clone)]
 pub struct AppClient {
     pub querier: AnyQuerier,
     pub executor: AnyExecutor,
+    inner: Rc<RefCell<App>>,
 }
 
 impl AppClient {
@@ -34,21 +35,16 @@ impl AppClient {
         Self {
             querier: app.clone().into(),
             executor: (app.clone(), admin).into(),
+            inner: app,
         }
     }
 
     pub fn with_app<T>(&self, f: impl FnOnce(&App) -> T) -> T {
-        match &self.executor {
-            AnyExecutor::MultiTest { app, .. } => f(&app.borrow()),
-            _ => unreachable!(),
-        }
+        f(&self.inner.borrow())
     }
 
     pub fn with_app_mut<T>(&self, f: impl FnOnce(&mut App) -> T) -> T {
-        match &self.executor {
-            AnyExecutor::MultiTest { app, .. } => f(&mut app.borrow_mut()),
-            _ => unreachable!(),
-        }
+        f(&mut *self.inner.borrow_mut())
     }
 
     pub fn clone_app(&self) -> Rc<RefCell<App>> {
@@ -63,5 +59,9 @@ impl AppClient {
             AnyExecutor::MultiTest { admin, .. } => admin.clone(),
             _ => unreachable!(),
         }
+    }
+
+    pub fn admin_canonical(&self) -> CanonicalAddr {
+        self.with_app(|app| app.api().addr_canonicalize(self.admin().as_str()).unwrap())
     }
 }

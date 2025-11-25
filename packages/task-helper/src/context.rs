@@ -1,5 +1,8 @@
 use anyhow::{Context, Result};
-use app_client::{address::AnyAddr, contracts::service_handler::ServiceHandlerQuerier};
+use app_client::{
+    address::AnyAddr,
+    contracts::{proxy::ProxyQuerier, service_handler::ServiceHandlerQuerier},
+};
 use app_utils::{config::load_chain_configs_from_wavs, path::repo_root};
 use clap::Parser;
 use layer_climb::prelude::*;
@@ -27,6 +30,7 @@ impl CliContext {
             CliCommand::UploadContract { args, .. } => args,
             CliCommand::FaucetTap { args, .. } => args,
             CliCommand::InstantiateServiceHandler { args, .. } => args,
+            CliCommand::InstantiateProxy { args, .. } => args,
             CliCommand::UploadComponent { args, .. } => args,
             CliCommand::UploadService { args, .. } => args,
             CliCommand::AssertAccountExists { args, .. } => args,
@@ -35,6 +39,7 @@ impl CliContext {
             CliCommand::OperatorDeleteService { args, .. } => args,
             CliCommand::OperatorSetSigningKey { args, .. } => args,
             CliCommand::QueryServiceHandlerEmails { args, .. } => args,
+            CliCommand::QueryProxyState { args, .. } => args,
         }
     }
 
@@ -83,6 +88,11 @@ impl CliContext {
     ) -> Result<ServiceHandlerQuerier> {
         let query_client = self.query_client().await?;
         Ok(ServiceHandlerQuerier::new(query_client.into(), addr.into()))
+    }
+
+    pub async fn proxy_querier(&self, addr: impl Into<AnyAddr>) -> Result<ProxyQuerier> {
+        let query_client = self.query_client().await?;
+        Ok(ProxyQuerier::new(query_client.into(), addr.into()))
     }
 
     pub async fn signing_client(&self) -> Result<SigningClient> {

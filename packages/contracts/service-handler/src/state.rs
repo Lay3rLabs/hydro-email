@@ -1,19 +1,28 @@
-use app_contract_api::service_handler::msg::{Email, EmailMessageOnly};
-use cosmwasm_std::{Addr, Order, StdResult, Storage};
+use app_contract_api::service_handler::msg::{Email, EmailMessageOnly, InstantiateMsg};
+use cosmwasm_std::{Addr, DepsMut, Order, StdResult, Storage};
 use cw_storage_plus::{Bound, Item, Map};
 
 /// Only set if we take ServiceHandler interface
 pub const SERVICE_MANAGER: Item<Addr> = Item::new("service_manager");
 /// Only set in the test approach
 pub const ADMIN: Item<Addr> = Item::new("admin");
+/// Proxy contract address
+const PROXY_ADDRESS: Item<Addr> = Item::new("proxy_address");
 
 const EMAILS_FROM: Map<(&str, u64), EmailMessageOnly> = Map::new("emails-from");
 const EMAILS_IN_ORDER: Map<u64, Email> = Map::new("emails-in-order");
 const EMAIL_ADDRESSES: Map<&str, ()> = Map::new("email-addresses");
 const EMAIL_PAGINATION_ID_COUNT: Item<u64> = Item::new("email-pagination-id-count");
 
-pub fn initialize(store: &mut dyn Storage) -> StdResult<()> {
-    EMAIL_PAGINATION_ID_COUNT.save(store, &0u64)
+pub fn initialize(deps: &mut DepsMut, msg: &InstantiateMsg) -> StdResult<()> {
+    EMAIL_PAGINATION_ID_COUNT.save(deps.storage, &0u64)?;
+    PROXY_ADDRESS.save(deps.storage, &deps.api.addr_validate(&msg.proxy_address)?)?;
+
+    Ok(())
+}
+
+pub fn proxy_address(store: &dyn Storage) -> StdResult<Addr> {
+    PROXY_ADDRESS.load(store)
 }
 
 pub fn push_email(store: &mut dyn Storage, email: &Email) -> StdResult<u64> {

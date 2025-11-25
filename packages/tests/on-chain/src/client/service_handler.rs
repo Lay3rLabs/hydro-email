@@ -1,4 +1,6 @@
-use app_client::contracts::service_handler::{ServiceHandlerExecutor, ServiceHandlerQuerier};
+use app_client::contracts::service_handler::{
+    ServiceHandlerContract, ServiceHandlerExecutor, ServiceHandlerQuerier,
+};
 use layer_climb::prelude::Address;
 
 use crate::{client::AppClient, code_ids::CodeId};
@@ -10,8 +12,22 @@ pub struct ServiceHandlerClient {
     pub address: Address,
 }
 
+impl From<ServiceHandlerClient> for ServiceHandlerContract {
+    fn from(client: ServiceHandlerClient) -> Self {
+        ServiceHandlerContract {
+            querier: client.querier,
+            executor: client.executor,
+            address: client.address.into(),
+        }
+    }
+}
+
 impl ServiceHandlerClient {
-    pub async fn new(app_client: AppClient, admin: Option<Address>) -> Self {
+    pub async fn new(
+        app_client: AppClient,
+        proxy_address: Address,
+        admin: Option<Address>,
+    ) -> Self {
         let pool = app_client.pool();
         let client = pool.get().await.unwrap();
 
@@ -19,6 +35,7 @@ impl ServiceHandlerClient {
 
         let msg = app_contract_api::service_handler::msg::InstantiateMsg {
             auth: app_contract_api::service_handler::msg::Auth::Admin(admin.to_string()),
+            proxy_address: proxy_address.to_string(),
         };
 
         let (address, _) = client
