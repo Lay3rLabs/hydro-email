@@ -27,6 +27,7 @@ impl CliContext {
             CliCommand::UploadContract { args, .. } => args,
             CliCommand::FaucetTap { args, .. } => args,
             CliCommand::InstantiateServiceHandler { args, .. } => args,
+            CliCommand::InstantiateProxy { args, .. } => args,
             CliCommand::UploadComponent { args, .. } => args,
             CliCommand::UploadService { args, .. } => args,
             CliCommand::AssertAccountExists { args, .. } => args,

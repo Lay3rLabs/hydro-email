@@ -230,6 +230,31 @@ async fn main() {
                 .await
                 .unwrap();
         }
+        CliCommand::InstantiateProxy {
+            admins,
+            args,
+            code_id,
+        } => {
+            let client = ctx.signing_client().await.unwrap();
+
+            let instantiate_msg = app_contract_api::proxy::msg::InstantiateMsg { admins };
+
+            let (contract_addr, tx_resp) = client
+                .contract_instantiate(None, code_id, "Proxy", &instantiate_msg, vec![], None)
+                .await
+                .unwrap();
+
+            println!("Instantiated Proxy contract at address: {contract_addr}");
+
+            args.output()
+                .write(OutputContractInstantiate {
+                    kind: ContractKind::Proxy,
+                    address: contract_addr.to_string(),
+                    tx_hash: tx_resp.txhash,
+                })
+                .await
+                .unwrap();
+        }
         CliCommand::FaucetTap {
             addr,
             amount,

@@ -381,6 +381,10 @@ tasks:
         vars:
           CONTRACT: service-handler
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_CODE_ID}}"
+      - task: contract-upload
+        vars:
+          CONTRACT: proxy
+          FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_PROXY_CODE_ID}}"
 
   contract-upload:
     deps: [assert-account-exists]
@@ -407,6 +411,18 @@ tasks:
       - echo "Instantiating Service Handler contract..."
       - task helper-exec -- instantiate-service-handler --output-file={{.FILENAME}} --code-id={{.CODE_ID}} --auth-address={{.AUTH_ADDRESS}} --auth-kind={{.AUTH_KIND}} --chain={{.CHAIN_KEY}}
       - echo "🚀 Instantiated Service Handler contract and saved info to {{.FILENAME}}"
+
+  contract-instantiate-proxy:
+    deps: [assert-account-exists]
+    requires:
+      vars: [FILENAME, CODE_ID]
+    vars:
+      ADMIN_ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}" | jq -r '.address'
+    cmds:
+      - echo "Instantiating Proxy contract..."
+      - task helper-exec -- instantiate-proxy --output-file={{.FILENAME}} --code-id={{.CODE_ID}} --admins={{.ADMIN_ADDRESS}} --chain={{.CHAIN_KEY}}
+      - echo "🚀 Instantiated Proxy contract and saved info to {{.FILENAME}}"
 
   ###################################################################
   ######################## COMPONENTS ###############################

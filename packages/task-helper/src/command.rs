@@ -34,6 +34,17 @@ pub enum CliCommand {
         #[clap(flatten)]
         args: CliArgs,
     },
+    /// Instantiate the Proxy contract
+    InstantiateProxy {
+        #[arg(long)]
+        code_id: u64,
+
+        #[arg(long, required = true, num_args = 1..)]
+        admins: Vec<String>,
+
+        #[clap(flatten)]
+        args: CliArgs,
+    },
     /// Upload a component to IPFS
     UploadComponent {
         #[arg(long)]
@@ -190,6 +201,7 @@ pub struct CliArgs {
 #[serde(rename_all = "kebab-case")]
 pub enum ContractKind {
     ServiceHandler,
+    Proxy,
 }
 
 impl std::fmt::Display for ContractKind {
@@ -202,6 +214,7 @@ impl ContractKind {
     pub fn as_str(&self) -> &str {
         match self {
             Self::ServiceHandler => "service-handler",
+            Self::Proxy => "proxy",
         }
     }
     pub async fn wasm_bytes(&self) -> Vec<u8> {
