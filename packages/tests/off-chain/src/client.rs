@@ -1,4 +1,5 @@
 //! Abstraction specifically for the off-chain multi-test environment
+pub mod proxy;
 pub mod service_handler;
 use app_client::{executor::AnyExecutor, querier::AnyQuerier};
 use std::{cell::RefCell, rc::Rc};

@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use app_client::{address::AnyAddr, service_handler::ServiceHandlerQuerier};
+use app_client::{address::AnyAddr, contracts::service_handler::ServiceHandlerQuerier};
 use app_utils::{config::load_chain_configs_from_wavs, path::repo_root};
 use clap::Parser;
 use layer_climb::prelude::*;

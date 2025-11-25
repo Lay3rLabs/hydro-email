@@ -669,6 +669,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "app-contract-proxy"
+version = "0.0.1"
+dependencies = [
+ "app-contract-api",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw2",
+ "schemars 1.1.0",
+ "serde",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "app-contract-service-handler"
 version = "0.0.1"
 dependencies = [
@@ -3699,6 +3713,7 @@ dependencies = [
  "anyhow",
  "app-client",
  "app-contract-api",
+ "app-contract-proxy",
  "app-contract-service-handler",
  "app-tests-common",
  "app-utils",

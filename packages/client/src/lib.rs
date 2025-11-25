@@ -3,6 +3,6 @@
 //! The idea is that by moving the heavy-lifting here, we're free to write higher-level code
 //! that provides an idiomatic and clean API
 pub mod address;
+pub mod contracts;
 pub mod executor;
 pub mod querier;
-pub mod service_handler;
