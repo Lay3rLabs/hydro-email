@@ -23,7 +23,7 @@ vars:
   COMPONENT_PREFIX: "app-component"
 
   # Contracts
-  ALL_CONTRACTS: ["service-handler"]
+  ALL_CONTRACTS: ["service-handler", "proxy"]
   CONTRACT_PREFIX: "app-contract"
   CW_OPTIMIZER_CACHE: "hydro-email"
 
@@ -31,6 +31,7 @@ vars:
   OAUTH_AUTH_URL: https://accounts.google.com/o/oauth2/v2/auth
   OAUTH_TOKEN_URL: https://oauth2.googleapis.com/token
   OAUTH_GMAIL_SCOPE: "https://mail.google.com/ https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify"
+  OAUTH_GMAIL_SCOPE: "https://mail.google.com/"
 
   # Service config
   SERVICE_CRON_SCHEDULE: "*/10 * * * * * *" # Every 10 seconds

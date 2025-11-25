@@ -1,4 +1,4 @@
-use app_client::service_handler::{ServiceHandlerExecutor, ServiceHandlerQuerier};
+use app_client::contracts::service_handler::{ServiceHandlerExecutor, ServiceHandlerQuerier};
 use layer_climb::prelude::Address;
 
 use crate::{client::AppClient, code_ids::CodeId};
@@ -7,6 +7,7 @@ use crate::{client::AppClient, code_ids::CodeId};
 pub struct ServiceHandlerClient {
     pub querier: ServiceHandlerQuerier,
     pub executor: ServiceHandlerExecutor,
+    pub address: Address,
 }
 
 impl ServiceHandlerClient {
@@ -36,6 +37,10 @@ impl ServiceHandlerClient {
             ServiceHandlerQuerier::new(app_client.querier.clone(), address.clone().into());
         let executor = ServiceHandlerExecutor::new(client.clone().into(), address.clone().into());
 
-        Self { querier, executor }
+        Self {
+            querier,
+            executor,
+            address,
+        }
     }
 }

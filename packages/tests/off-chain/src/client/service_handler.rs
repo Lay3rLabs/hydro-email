@@ -1,4 +1,4 @@
-use app_client::service_handler::{ServiceHandlerExecutor, ServiceHandlerQuerier};
+use app_client::contracts::service_handler::{ServiceHandlerExecutor, ServiceHandlerQuerier};
 use cosmwasm_std::Addr;
 use cw_multi_test::{ContractWrapper, Executor};
 
@@ -8,6 +8,7 @@ use crate::client::AppClient;
 pub struct ServiceHandlerClient {
     pub querier: ServiceHandlerQuerier,
     pub executor: ServiceHandlerExecutor,
+    pub address: Addr,
 }
 
 impl ServiceHandlerClient {
@@ -29,14 +30,19 @@ impl ServiceHandlerClient {
         };
 
         let address = app_client.with_app_mut(|app| {
-            app.instantiate_contract(code_id, admin.clone(), &msg, &[], "telegram-payments", None)
+            app.instantiate_contract(code_id, admin.clone(), &msg, &[], "service handler", None)
                 .unwrap()
         });
 
         let querier =
             ServiceHandlerQuerier::new(app_client.querier.clone(), address.clone().into());
-        let executor = ServiceHandlerExecutor::new(app_client.executor.clone(), address.into());
+        let executor =
+            ServiceHandlerExecutor::new(app_client.executor.clone(), address.clone().into());
 
-        Self { querier, executor }
+        Self {
+            querier,
+            executor,
+            address,
+        }
     }
 }

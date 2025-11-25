@@ -84,7 +84,8 @@ tasks:
       - cd "{{.PATH_SRC}}" && cargo run --bin schema
       - rm -rf "{{.PATH_SRC}}/schema/cw_schema"
       - mv "{{.PATH_SRC}}/schema" "{{.PATH_CONTRACT_SCHEMA}}/{{.CONTRACT}}"
-      - echo "Built schema for contract {{.CONTRACT}} at {{.PATH_CONTRACT_SCHEMA}}/{{.CONTRACT}}"
+      - echo ""
+      - echo "✅ Built schema for contract {{.CONTRACT}} at {{.PATH_CONTRACT_SCHEMA}}/{{.CONTRACT}}"
 
   ### QUERY TASKS
 

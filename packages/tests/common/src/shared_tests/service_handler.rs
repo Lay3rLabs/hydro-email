@@ -1,4 +1,4 @@
-use app_client::service_handler::{ServiceHandlerExecutor, ServiceHandlerQuerier};
+use app_client::contracts::service_handler::{ServiceHandlerExecutor, ServiceHandlerQuerier};
 use app_contract_api::service_handler::{event::EmailEvent, msg::Email};
 use layer_climb::events::CosmosTxEvents;
 

@@ -5,6 +5,7 @@ use tracing::{debug, info, instrument};
 use crate::client::TestPool;
 
 static SERVICE_HANDLER_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
+static PROXY_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
 
 pub struct CodeId {}
 
@@ -15,10 +16,19 @@ impl CodeId {
             .get_or_init(upload_service_handler)
             .await
     }
+
+    #[instrument]
+    pub async fn new_proxy() -> u64 {
+        *PROXY_CODE_ID.get_or_init(upload_proxy).await
+    }
 }
 
 async fn upload_service_handler() -> u64 {
     upload(wasm_path("service-handler")).await
+}
+
+async fn upload_proxy() -> u64 {
+    upload(wasm_path("proxy")).await
 }
 
 #[instrument(skip(wasm_path), fields(path = %wasm_path.as_ref().display()))]
