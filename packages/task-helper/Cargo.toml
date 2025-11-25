@@ -23,3 +23,4 @@ tracing = {workspace = true}
 layer-climb = {workspace = true}
 reqwest = {workspace = true}
 cosmwasm-std = {workspace = true}
+const-hex = {workspace = true}

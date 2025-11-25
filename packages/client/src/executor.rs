@@ -1,3 +1,6 @@
+#[cfg(feature = "client-pool")]
+use std::sync::Arc;
+
 use anyhow::Result;
 use layer_climb::{events::CosmosTxEvents, signing::SigningClient};
 use serde::Serialize;
@@ -19,6 +22,8 @@ pub enum AnyExecutor {
     Climb(SigningClient),
     #[cfg(feature = "client-pool")]
     ClimbPool(layer_climb::pool::SigningClientPool),
+    #[cfg(feature = "client-pool")]
+    ClimbPoolObject(Arc<deadpool::managed::Object<layer_climb::pool::SigningClientPoolManager>>),
     #[cfg(feature = "multitest")]
     MultiTest {
         app: AppWrapper,
@@ -36,6 +41,17 @@ impl From<SigningClient> for AnyExecutor {
 impl From<layer_climb::pool::SigningClientPool> for AnyExecutor {
     fn from(pool: layer_climb::pool::SigningClientPool) -> AnyExecutor {
         AnyExecutor::ClimbPool(pool)
+    }
+}
+
+#[cfg(feature = "client-pool")]
+impl From<Arc<deadpool::managed::Object<layer_climb::pool::SigningClientPoolManager>>>
+    for AnyExecutor
+{
+    fn from(
+        client: Arc<deadpool::managed::Object<layer_climb::pool::SigningClientPoolManager>>,
+    ) -> AnyExecutor {
+        AnyExecutor::ClimbPoolObject(client)
     }
 }
 
@@ -71,6 +87,21 @@ impl AnyExecutor {
             #[cfg(feature = "client-pool")]
             Self::ClimbPool(pool) => {
                 let client = pool.get().await.map_err(|e| anyhow::anyhow!("{e:?}"))?;
+                let funds = funds
+                    .iter()
+                    .map(|c| layer_climb::prelude::Coin {
+                        denom: c.denom.clone(),
+                        amount: c.amount.to_string(),
+                    })
+                    .collect::<Vec<_>>();
+
+                client
+                    .contract_execute(&address.into(), msg, funds, None)
+                    .await
+                    .map(AnyTxResponse::Climb)
+            }
+            #[cfg(feature = "client-pool")]
+            Self::ClimbPoolObject(client) => {
                 let funds = funds
                     .iter()
                     .map(|c| layer_climb::prelude::Coin {

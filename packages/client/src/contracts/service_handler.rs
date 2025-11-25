@@ -17,6 +17,13 @@ use app_contract_api::service_handler::msg::{
 };
 
 #[derive(Clone)]
+pub struct ServiceHandlerContract {
+    pub querier: ServiceHandlerQuerier,
+    pub executor: ServiceHandlerExecutor,
+    pub address: AnyAddr,
+}
+
+#[derive(Clone)]
 pub struct ServiceHandlerQuerier {
     pub inner: AnyQuerier,
     pub addr: AnyAddr,

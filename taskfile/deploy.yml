@@ -27,9 +27,18 @@ tasks:
           FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}"
       - task: contract-instantiate-service-handler
         vars:
+          PROXY_CODE_ID:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_CODE_ID}}" | jq -r '.code_id'
           CODE_ID:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_CODE_ID}}" | jq -r '.code_id'
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}"
+      - task: contract-instantiate-proxy
+        vars:
+          ADMIN_ADDRESS:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}" | jq -r '.address'
+          CODE_ID:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_CODE_ID}}" | jq -r '.code_id'
+          FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_PROXY_INSTANTIATE}}"
       - task: service-upload-and-set-uri
         vars:
           ACTIVATE: "true"
@@ -402,26 +411,37 @@ tasks:
   contract-instantiate-service-handler:
     deps: [assert-account-exists]
     requires:
-      vars: [FILENAME, CODE_ID]
+      vars: [FILENAME, CODE_ID, PROXY_CODE_ID]
     vars:
       AUTH_ADDRESS:
         sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}" | jq -r '.service_manager_address'
       AUTH_KIND: "service_manager"
     cmds:
       - echo "Instantiating Service Handler contract..."
-      - task helper-exec -- instantiate-service-handler --output-file={{.FILENAME}} --code-id={{.CODE_ID}} --auth-address={{.AUTH_ADDRESS}} --auth-kind={{.AUTH_KIND}} --chain={{.CHAIN_KEY}}
+      - >
+        task helper-exec -- instantiate-service-handler
+        --output-file {{.FILENAME}}
+        --code-id {{.CODE_ID}}
+        --auth-address {{.AUTH_ADDRESS}}
+        --auth-kind {{.AUTH_KIND}}
+        --proxy-code-id {{.PROXY_CODE_ID}}
+        --proxy-salt {{.DEPLOY_PROXY_SALT}}
+        --chain {{.CHAIN_KEY}}
       - echo "🚀 Instantiated Service Handler contract and saved info to {{.FILENAME}}"
 
   contract-instantiate-proxy:
     deps: [assert-account-exists]
     requires:
-      vars: [FILENAME, CODE_ID]
-    vars:
-      ADMIN_ADDRESS:
-        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}" | jq -r '.address'
+      vars: [FILENAME, CODE_ID, ADMIN_ADDRESS]
     cmds:
       - echo "Instantiating Proxy contract..."
-      - task helper-exec -- instantiate-proxy --output-file={{.FILENAME}} --code-id={{.CODE_ID}} --admins={{.ADMIN_ADDRESS}} --chain={{.CHAIN_KEY}}
+      - >
+        task helper-exec -- instantiate-proxy
+        --output-file {{.FILENAME}}
+        --code-id {{.CODE_ID}}
+        --admins {{.ADMIN_ADDRESS}}
+        --salt {{.DEPLOY_PROXY_SALT}}
+        --chain {{.CHAIN_KEY}}
       - echo "🚀 Instantiated Proxy contract and saved info to {{.FILENAME}}"
 
   ###################################################################

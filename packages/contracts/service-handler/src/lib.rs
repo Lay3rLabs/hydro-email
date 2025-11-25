@@ -6,8 +6,8 @@ use app_contract_api::service_handler::{
     },
 };
 use cosmwasm_std::{
-    ensure, entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, Storage,
+    ensure, entry_point, to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
+    Response, StdResult, Storage, WasmMsg,
 };
 use cw2::set_contract_version;
 use wavs_types::contracts::cosmwasm::{
@@ -28,13 +28,13 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
 pub fn instantiate(
-    deps: DepsMut,
+    mut deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    state::initialize(deps.storage)?;
+    state::initialize(&mut deps, &msg)?;
 
     // Set admin or service manager for later validation
     match msg.auth {
@@ -65,10 +65,21 @@ pub fn execute(
         match msg {
             CustomExecuteMsg::Email(email) => {
                 let pagination_id = state::push_email(store, &email)?;
-                Ok(Response::new().add_event(EmailEvent {
-                    email,
-                    pagination_id,
-                }))
+
+                let proxy_msg = CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: state::proxy_address(store)?.to_string(),
+                    msg: to_json_binary(
+                        &app_contract_api::proxy::msg::ExecuteMsg::ForwardToInflow {},
+                    )?,
+                    funds: vec![],
+                });
+
+                Ok(Response::new()
+                    .add_message(proxy_msg)
+                    .add_event(EmailEvent {
+                        email,
+                        pagination_id,
+                    }))
             }
         }
     }

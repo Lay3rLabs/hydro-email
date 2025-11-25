@@ -83,6 +83,7 @@ vars:
   DEPLOY_FILENAME_COMPONENT_OPERATOR_EMAIL_READER_CID: "component-operator-email-reader-cid.json"
   DEPLOY_FILENAME_COMPONENT_AGGREGATOR_SUBMITTER_CID: "component-aggregator-submitter-cid.json"
   DEPLOY_FILENAME_SERVICE_CID: "service-cid.json"
+  DEPLOY_PROXY_SALT: "0x676f6f64207669626573203c33"
 
   # Misc
   DOCKER_SUDO:

@@ -53,6 +53,7 @@ See [LocalEmail](./LocalEmail.md) for using the local email server for testing, 
 
 ```bash
 task contracts:query-service-handler-emails
+task contracts:query-proxy-state
 ```
 
 7. When done, stop all backend services

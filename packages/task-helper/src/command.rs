@@ -2,7 +2,7 @@ use crate::{config::path_builds, output::OutputFormat};
 use clap::{Parser, ValueEnum};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 use wavs_types::ChainKey;
 
 #[derive(Clone, Parser)]
@@ -31,6 +31,14 @@ pub enum CliCommand {
         #[arg(long, default_value_t = AuthKind::ServiceManager)]
         auth_kind: AuthKind,
 
+        /// The proxy code ID (used to predict address via instantiate2)
+        #[arg(long)]
+        proxy_code_id: u64,
+
+        /// The proxy salt (used to predict address via instantiate2)
+        #[arg(long)]
+        proxy_salt: HexBytes,
+
         #[clap(flatten)]
         args: CliArgs,
     },
@@ -41,6 +49,9 @@ pub enum CliCommand {
 
         #[arg(long, required = true, num_args = 1..)]
         admins: Vec<String>,
+
+        #[arg(long)]
+        salt: HexBytes,
 
         #[clap(flatten)]
         args: CliArgs,
@@ -178,6 +189,39 @@ pub enum CliCommand {
         #[clap(flatten)]
         args: CliArgs,
     },
+    QueryProxyState {
+        /// The address of the service handler contract
+        #[arg(long)]
+        address: String,
+
+        #[clap(flatten)]
+        args: CliArgs,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub struct HexBytes(Vec<u8>);
+
+impl HexBytes {
+    pub fn into_inner(self) -> Vec<u8> {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for HexBytes {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl FromStr for HexBytes {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        const_hex::decode(s)
+            .map(HexBytes)
+            .map_err(|e| format!("invalid hex: {e}"))
+    }
 }
 
 // common args for several commands

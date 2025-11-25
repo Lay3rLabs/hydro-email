@@ -184,6 +184,8 @@ async fn main() {
             auth_kind,
             args,
             code_id,
+            proxy_code_id,
+            proxy_salt,
         } => {
             let client = ctx.signing_client().await.unwrap();
 
@@ -205,7 +207,16 @@ async fn main() {
                 }
             };
 
-            let instantiate_msg = app_contract_api::service_handler::msg::InstantiateMsg { auth };
+            let proxy_address = client
+                .querier
+                .contract_predict_address(proxy_code_id, &client.addr, proxy_salt.as_ref())
+                .await
+                .unwrap();
+
+            let instantiate_msg = app_contract_api::service_handler::msg::InstantiateMsg {
+                auth,
+                proxy_address: proxy_address.to_string(),
+            };
 
             let (contract_addr, tx_resp) = client
                 .contract_instantiate(
@@ -234,15 +245,37 @@ async fn main() {
             admins,
             args,
             code_id,
+            salt,
         } => {
             let client = ctx.signing_client().await.unwrap();
+
+            // borrowing salt for sanity check
+            let predicted_addr = client
+                .querier
+                .contract_predict_address(code_id, &client.addr, salt.as_ref())
+                .await
+                .unwrap();
 
             let instantiate_msg = app_contract_api::proxy::msg::InstantiateMsg { admins };
 
             let (contract_addr, tx_resp) = client
-                .contract_instantiate(None, code_id, "Proxy", &instantiate_msg, vec![], None)
+                .contract_instantiate2(
+                    None,
+                    code_id,
+                    "Proxy",
+                    &instantiate_msg,
+                    vec![],
+                    salt.into_inner(),
+                    false,
+                    None,
+                )
                 .await
                 .unwrap();
+
+            // sanity check
+            if predicted_addr != contract_addr {
+                panic!("Predicted address does not match instantiated address (predicted: {predicted_addr}, received: {contract_addr})");
+            }
 
             println!("Instantiated Proxy contract at address: {contract_addr}");
 
@@ -597,6 +630,14 @@ async fn main() {
             println!("{:#?}\n", emails);
 
             println!("{} emails", emails.len());
+        }
+        CliCommand::QueryProxyState { address, args: _ } => {
+            let address = ctx.parse_address(&address).await.unwrap();
+            let client = ctx.proxy_querier(address).await.unwrap();
+
+            let state = client.state().await.unwrap();
+
+            println!("{:#?}\n", state);
         }
     }
 }

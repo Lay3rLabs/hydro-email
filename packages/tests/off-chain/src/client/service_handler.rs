@@ -1,8 +1,10 @@
-use app_client::contracts::service_handler::{ServiceHandlerExecutor, ServiceHandlerQuerier};
+use app_client::contracts::service_handler::{
+    ServiceHandlerContract, ServiceHandlerExecutor, ServiceHandlerQuerier,
+};
 use cosmwasm_std::Addr;
 use cw_multi_test::{ContractWrapper, Executor};
 
-use crate::client::AppClient;
+use crate::client::{proxy::ProxyClient, AppClient};
 
 #[derive(Clone)]
 pub struct ServiceHandlerClient {
@@ -11,13 +13,23 @@ pub struct ServiceHandlerClient {
     pub address: Addr,
 }
 
+impl From<ServiceHandlerClient> for ServiceHandlerContract {
+    fn from(client: ServiceHandlerClient) -> Self {
+        ServiceHandlerContract {
+            querier: client.querier,
+            executor: client.executor,
+            address: client.address.into(),
+        }
+    }
+}
+
 impl ServiceHandlerClient {
-    pub fn new(app_client: AppClient) -> Self {
+    pub fn new(app_client: AppClient, proxy_code_id: u64) -> Self {
         let admin = app_client.admin();
-        Self::new_with_admin(app_client, admin)
+        Self::new_with_admin(app_client, proxy_code_id, admin)
     }
 
-    pub fn new_with_admin(app_client: AppClient, admin: Addr) -> Self {
+    pub fn new_with_admin(app_client: AppClient, proxy_code_id: u64, admin: Addr) -> Self {
         let contract = ContractWrapper::new(
             app_contract_service_handler::execute,
             app_contract_service_handler::instantiate,
@@ -27,6 +39,7 @@ impl ServiceHandlerClient {
 
         let msg = app_contract_api::service_handler::msg::InstantiateMsg {
             auth: app_contract_api::service_handler::msg::Auth::Admin(admin.to_string()),
+            proxy_address: ProxyClient::predict_address(&app_client, proxy_code_id).to_string(),
         };
 
         let address = app_client.with_app_mut(|app| {

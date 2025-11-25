@@ -17,6 +17,13 @@ use app_contract_api::proxy::{
 };
 
 #[derive(Clone)]
+pub struct ProxyContract {
+    pub querier: ProxyQuerier,
+    pub executor: ProxyExecutor,
+    pub address: AnyAddr,
+}
+
+#[derive(Clone)]
 pub struct ProxyQuerier {
     pub inner: AnyQuerier,
     pub addr: AnyAddr,
