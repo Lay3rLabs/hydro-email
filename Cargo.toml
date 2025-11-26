@@ -67,6 +67,7 @@ serde_json = "1.0.142"
 serde_urlencoded = "0.7.1"
 bincode = { version = "2.0.1", features = ["serde"] }
 toml = "0.9.5"
+serde_yml = "0.0.12"
 
 # Async
 tokio = {version = "1.48.0", features = ["full"]}
@@ -103,8 +104,6 @@ layer-climb-address = { version = "0.8.8", features = [
 layer-climb-config = "0.8.8"
 layer-climb-cli = "0.8.8"
 layer-climb-proto = "0.8.8"
-
-
 
 # Schema
 schemars = "1.0.4"

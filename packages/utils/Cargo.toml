@@ -31,3 +31,5 @@ deadpool = { workspace = true}
 cw-multi-test = { workspace = true}
 wstd = { workspace = true}
 wavs-wasi-utils = { workspace = true}
+serde_yml = { workspace = true}
+dotenvy = { workspace = true}

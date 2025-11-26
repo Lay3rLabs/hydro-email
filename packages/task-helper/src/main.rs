@@ -304,7 +304,9 @@ async fn main() {
                 .await
                 .unwrap()
                 .unwrap_or_default();
-            faucet::tap(&addr, amount, denom.as_deref()).await.unwrap();
+            faucet::tap(&ctx.chain_key(), &addr, amount, denom.as_deref())
+                .await
+                .unwrap();
             let balance_after = client
                 .balance(addr.clone(), None)
                 .await

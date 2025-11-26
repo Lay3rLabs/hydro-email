@@ -53,7 +53,27 @@ vars:
   PORT_PROMETHEUS_UI: 9092
 
   # Deployment
-  CHAIN_KEY: "cosmos:pion-1"
+  TESTNET_CHAIN_KEY: "cosmos:pion-1"
+  MAINNET_CHAIN_KEY: "cosmos:neutron-1"
+  LOCAL_CHAIN_KEY: "dev:local"
+
+  DEPLOY_TARGET:
+    # neither env vars nor any dynamic vars are available at this stage, so we have to read .env manually
+    sh: grep '^DEPLOY_TARGET=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
+
+  CHAIN_KEY:
+    sh: |
+      if [ "{{.DEPLOY_TARGET}}" = "local" ]; then
+        echo "{{.LOCAL_CHAIN_KEY}}"
+      elif [ "{{.DEPLOY_TARGET}}" = "testnet" ]; then
+        echo "{{.TESTNET_CHAIN_KEY}}"
+      elif [ "{{.DEPLOY_TARGET}}" = "mainnet" ]; then
+        echo "{{.MAINNET_CHAIN_KEY}}"
+      else
+        echo "Error: Invalid DEPLOY_TARGET '{{.DEPLOY_TARGET}}'. Must be one of: local, testnet, mainnet" >&2
+        exit 1
+      fi
+
   ALL_MNEMONICS_TO_FUND:
     [
       "CLI_MNEMONIC",

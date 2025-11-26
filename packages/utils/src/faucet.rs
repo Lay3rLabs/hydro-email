@@ -1,5 +1,6 @@
 use anyhow::Result;
 use layer_climb::prelude::*;
+use wavs_types::ChainKey;
 
 use crate::config::load_chain_configs_from_wavs;
 
@@ -11,8 +12,15 @@ static NEUTRON_FAUCET_CLIENT: tokio::sync::OnceCell<SigningClient> =
 
 const TAP_AMOUNT: u128 = 1_000_000_000;
 
-pub async fn tap(addr: &Address, amount: Option<u128>, denom: Option<&str>) -> Result<()> {
-    let signer = NEUTRON_FAUCET_CLIENT.get_or_init(create_client).await;
+pub async fn tap(
+    chain_key: &ChainKey,
+    addr: &Address,
+    amount: Option<u128>,
+    denom: Option<&str>,
+) -> Result<()> {
+    let signer = NEUTRON_FAUCET_CLIENT
+        .get_or_init(|| create_client(chain_key))
+        .await;
 
     signer
         .transfer(amount.unwrap_or(TAP_AMOUNT), addr, denom, None)
@@ -39,13 +47,13 @@ pub async fn tap(addr: &Address, amount: Option<u128>, denom: Option<&str>) -> R
     //     .error_for_status()?;
 }
 
-async fn create_client() -> SigningClient {
+async fn create_client(chain_key: &ChainKey) -> SigningClient {
     let chain_configs = load_chain_configs_from_wavs(None as Option<std::path::PathBuf>)
         .await
         .unwrap();
 
     let chain_config = chain_configs
-        .get_chain(&"cosmos:pion-1".parse().unwrap())
+        .get_chain(chain_key)
         .unwrap()
         .to_cosmos_config()
         .unwrap();

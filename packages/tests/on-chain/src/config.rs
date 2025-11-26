@@ -1,4 +1,7 @@
-use app_utils::{config::load_chain_configs_from_wavs, path::repo_wavs_home};
+use app_utils::{
+    config::{active_chain_key, load_chain_configs_from_wavs},
+    path::repo_wavs_home,
+};
 use layer_climb::prelude::ChainConfig;
 use tokio::sync::OnceCell;
 use wavs_types::ChainKey;
@@ -8,8 +11,6 @@ pub(super) const PORT_WAVS_AGGREGATOR: u32 = 8200;
 
 // TODO - extend this for multiple operators
 static TEST_CONFIG: OnceCell<TestConfig> = OnceCell::const_new();
-
-const CHAIN_KEY: &str = "cosmos:pion-1";
 
 #[derive(Clone)]
 pub struct TestConfig {
@@ -38,7 +39,8 @@ impl TestConfig {
             .await
             .expect("Failed to load chain configurations");
 
-        let chain_key: ChainKey = CHAIN_KEY.parse().unwrap();
+        let chain_key = active_chain_key().await.unwrap();
+
         let mut chain_config = chain_configs
             .get_chain(&chain_key)
             .unwrap_or_else(|| panic!("No cosmos chain config found for {chain_key}"))
