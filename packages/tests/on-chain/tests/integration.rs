@@ -1,5 +1,5 @@
 use app_tests_common::shared_tests::integration::test_integration;
-use app_utils::tracing::tracing_init;
+use app_utils::tracing::{env_init, tracing_init};
 use on_chain_tests::client::{
     proxy::ProxyClient, service_handler::ServiceHandlerClient, AppClient,
 };
@@ -7,6 +7,7 @@ use on_chain_tests::client::{
 #[tokio::test]
 async fn integration() {
     tracing_init();
+    env_init();
 
     let app_client = AppClient::new().await;
     let proxy_creator = app_client.pool().get().await.unwrap();

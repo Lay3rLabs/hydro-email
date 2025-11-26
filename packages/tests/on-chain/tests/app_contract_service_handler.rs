@@ -1,5 +1,5 @@
 use app_contract_api::service_handler::msg::Email;
-use app_utils::tracing::tracing_init;
+use app_utils::tracing::{env_init, tracing_init};
 use on_chain_tests::client::{
     proxy::ProxyClient, service_handler::ServiceHandlerClient, AppClient,
 };
@@ -7,6 +7,7 @@ use on_chain_tests::client::{
 #[tokio::test]
 async fn get_admin() {
     tracing_init();
+    env_init();
 
     let app_client = AppClient::new().await;
 
@@ -23,6 +24,7 @@ async fn get_admin() {
 #[tokio::test]
 async fn push_email() {
     tracing_init();
+    env_init();
 
     let app_client = AppClient::new().await;
     let proxy_creator = app_client.pool().get().await.unwrap();

@@ -3,7 +3,10 @@ pub mod proxy;
 pub mod service_handler;
 
 use app_client::{address::AnyAddr, executor::AnyExecutor, querier::AnyQuerier};
-use app_utils::faucet;
+use app_utils::{
+    config::{active_chain_key, deploy_target, DeployTarget},
+    faucet,
+};
 use deadpool::managed::Pool;
 use rand::prelude::*;
 use tokio::sync::OnceCell;
@@ -15,8 +18,11 @@ use layer_climb::{
 
 use crate::config::TestConfig;
 
-const MAINTAIN_MINIMUM_BALANCE_THRESHOLD: u128 = 100000;
-const MAINTAIN_MINIMUM_BALANCE_TOPUP: u128 = 10000000;
+const MAINTAIN_MINIMUM_BALANCE_THRESHOLD_LOCAL: u128 = 100000;
+const MAINTAIN_MINIMUM_BALANCE_TOPUP_LOCAL: u128 = 10000000;
+
+const MAINTAIN_MINIMUM_BALANCE_THRESHOLD_REMOTE: u128 = 50_000;
+const MAINTAIN_MINIMUM_BALANCE_TOPUP_REMOTE: u128 = 50_000;
 
 static TEST_POOL: OnceCell<TestPool> = OnceCell::const_new();
 
@@ -71,7 +77,9 @@ impl AppClient {
 
         // This needs funding first, otherwise you cannot query sequence and account number
         let signer_addr = signer.address(&self.chain_config).await.unwrap();
-        faucet::tap(&signer_addr, None, None).await.unwrap();
+        faucet::tap(&active_chain_key().await.unwrap(), &signer_addr, None, None)
+            .await
+            .unwrap();
 
         SigningClient::new(self.chain_config.clone(), signer, None)
             .await
@@ -90,6 +98,36 @@ impl TestPool {
     }
 
     async fn instantiate() -> Self {
+        match deploy_target().unwrap() {
+            DeployTarget::Local => Self::instantiate_local().await,
+            DeployTarget::Mainnet | DeployTarget::Testnet => Self::instantiate_remote().await,
+        }
+    }
+
+    async fn instantiate_remote() -> Self {
+        let chain_config = TestConfig::get().await.chain_config;
+
+        let mnemonic = std::env::var("ON_CHAIN_TEST_REMOTE_MNEMONIC").expect(
+            "ON_CHAIN_TEST_REMOTE_MNEMONIC environment variable not set for remote testing",
+        );
+
+        let pool =
+            SigningClientPoolManager::new_mnemonic(mnemonic, chain_config.clone(), None, None)
+                .with_minimum_balance(
+                    MAINTAIN_MINIMUM_BALANCE_THRESHOLD_REMOTE,
+                    MAINTAIN_MINIMUM_BALANCE_TOPUP_REMOTE,
+                    None,
+                    None,
+                )
+                .await
+                .unwrap();
+
+        let pool = SigningClientPool::new(Pool::builder(pool).max_size(8).build().unwrap());
+
+        Self { pool }
+    }
+
+    async fn instantiate_local() -> Self {
         let mut rng = rand::rng();
 
         let entropy: [u8; 32] = rng.random();
@@ -116,7 +154,9 @@ impl TestPool {
         if balance < 10000000000 {
             tracing::info!("{} has balance of {}, sending some funds...", addr, balance);
 
-            faucet::tap(&addr, None, None).await.unwrap();
+            faucet::tap(&active_chain_key().await.unwrap(), &addr, None, None)
+                .await
+                .unwrap();
             let new_balance = querier
                 .balance(addr, None)
                 .await
@@ -134,8 +174,8 @@ impl TestPool {
         let pool =
             SigningClientPoolManager::new_mnemonic(mnemonic, chain_config.clone(), None, None)
                 .with_minimum_balance(
-                    MAINTAIN_MINIMUM_BALANCE_THRESHOLD,
-                    MAINTAIN_MINIMUM_BALANCE_TOPUP,
+                    MAINTAIN_MINIMUM_BALANCE_THRESHOLD_LOCAL,
+                    MAINTAIN_MINIMUM_BALANCE_TOPUP_LOCAL,
                     None,
                     None,
                 )
