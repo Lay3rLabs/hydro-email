@@ -14,14 +14,63 @@ pub enum DeployTarget {
 }
 
 pub fn deploy_target() -> Result<DeployTarget> {
-    match std::env::var("DEPLOY_TARGET").as_deref() {
+    match std::env::var("DEPLOY_CHAIN_TARGET").as_deref() {
         Ok("local") => Ok(DeployTarget::Local),
         Ok("testnet") => Ok(DeployTarget::Testnet),
         Ok("mainnet") => Ok(DeployTarget::Mainnet),
         _ => Err(anyhow::anyhow!(
-            "DEPLOY_TARGET must be set to one of: local, testnet, or mainnet"
+            "DEPLOY_CHAIN_TARGET must be set to one of: local, testnet, or mainnet"
         )),
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LocalPortKind {
+    WavsOperatorBase,
+    WavsAggregator,
+    IpfsApi,
+    IpfsGateway,
+    JaegerUi,
+    PrometheusUi,
+}
+
+pub async fn local_port(kind: LocalPortKind) -> Result<u32> {
+    let contents = tokio::fs::read_to_string(
+        repo_root()
+            .ok_or(anyhow::anyhow!("could not get repo root"))?
+            .join("taskfile")
+            .join("config.yml"),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("could not read taskfile config: {e:?}"))?;
+
+    #[derive(Deserialize, Debug)]
+    struct TaskfileConfig {
+        vars: TaskfileConfigVars,
+    }
+    #[derive(Deserialize, Debug)]
+    #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+    struct TaskfileConfigVars {
+        local_port_wavs_operator_base: u32,
+        local_port_wavs_aggregator: u32,
+        local_port_ipfs_api: u32,
+        local_port_ipfs_gateway: u32,
+        local_port_jaeger_ui: u32,
+        local_port_prometheus_ui: u32,
+    }
+
+    let taskfile_config: TaskfileConfig = serde_yml::from_str(&contents)?;
+
+    let local_port = match kind {
+        LocalPortKind::WavsOperatorBase => taskfile_config.vars.local_port_wavs_operator_base,
+        LocalPortKind::WavsAggregator => taskfile_config.vars.local_port_wavs_aggregator,
+        LocalPortKind::IpfsApi => taskfile_config.vars.local_port_ipfs_api,
+        LocalPortKind::IpfsGateway => taskfile_config.vars.local_port_ipfs_gateway,
+        LocalPortKind::JaegerUi => taskfile_config.vars.local_port_jaeger_ui,
+        LocalPortKind::PrometheusUi => taskfile_config.vars.local_port_prometheus_ui,
+    };
+
+    Ok(local_port)
 }
 pub async fn active_chain_key() -> Result<ChainKey> {
     let contents = tokio::fs::read_to_string(
