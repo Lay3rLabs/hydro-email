@@ -52,7 +52,7 @@ See [LocalEmail](./LocalEmail.md) for using the local email server for testing, 
 
 6. Check the on-chain results
 
-This will use the same `DEPLOY_TARGET` env var as the deploy commands to detrermine which chain to query
+This will use the same `DEPLOY_CHAIN_TARGET` env var as the deploy commands to detrermine which chain to query
 
 ```bash
 task contracts:query-service-handler-emails

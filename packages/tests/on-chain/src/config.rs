@@ -6,9 +6,6 @@ use layer_climb::prelude::ChainConfig;
 use tokio::sync::OnceCell;
 use wavs_types::ChainKey;
 
-pub(super) const PORT_WAVS_OPERATOR_BASE: u32 = 8123;
-pub(super) const PORT_WAVS_AGGREGATOR: u32 = 8200;
-
 // TODO - extend this for multiple operators
 static TEST_CONFIG: OnceCell<TestConfig> = OnceCell::const_new();
 
@@ -21,17 +18,6 @@ pub struct TestConfig {
 impl TestConfig {
     pub async fn get() -> Self {
         TEST_CONFIG.get_or_init(Self::instantiate).await.clone()
-    }
-
-    pub fn wavs_endpoint(operator_number: Option<u32>) -> String {
-        format!(
-            "http://localhost:{}",
-            PORT_WAVS_OPERATOR_BASE + operator_number.unwrap_or(0)
-        )
-    }
-
-    pub fn aggregator_endpoint() -> String {
-        format!("http://localhost:{PORT_WAVS_AGGREGATOR}")
     }
 
     async fn instantiate() -> Self {

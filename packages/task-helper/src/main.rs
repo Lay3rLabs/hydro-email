@@ -321,6 +321,7 @@ async fn main() {
             kind,
             component,
             args,
+            ipfs_kind,
             ipfs_api_url,
             ipfs_gateway_url,
         } => {
@@ -328,11 +329,15 @@ async fn main() {
 
             let digest = wavs_types::ComponentDigest::hash(&bytes);
 
+            let ipfs_api_url = strip_trailing_slash(&ipfs_api_url);
+            let ipfs_gateway_url = strip_trailing_slash(&ipfs_gateway_url);
+
             let resp = IpfsFile::upload(
+                ipfs_kind,
                 bytes,
                 &format!("{kind}-{component}.wasm"),
-                ipfs_api_url.as_ref(),
-                ipfs_gateway_url.as_ref(),
+                &ipfs_gateway_url,
+                &ipfs_api_url,
                 true,
             )
             .await
@@ -358,6 +363,7 @@ async fn main() {
         }
         CliCommand::UploadService {
             args,
+            ipfs_kind,
             ipfs_api_url,
             ipfs_gateway_url,
             contract_service_handler_instantiation_file,
@@ -378,14 +384,6 @@ async fn main() {
                 output_directory.join(component_aggregator_submitter_cid_file);
             let middleware_instantiation_file =
                 output_directory.join(middleware_instantiation_file);
-
-            fn strip_trailing_slash(url: &Url) -> String {
-                let s = url.as_str();
-                match s.strip_suffix('/') {
-                    Some(stripped) => stripped.to_string(),
-                    None => s.to_string(),
-                }
-            }
 
             let ipfs_api_url = strip_trailing_slash(&ipfs_api_url);
             let ipfs_gateway_url = strip_trailing_slash(&ipfs_gateway_url);
@@ -524,10 +522,11 @@ async fn main() {
             let digest = wavs_types::ServiceDigest::hash(&bytes);
 
             let resp = IpfsFile::upload(
+                ipfs_kind,
                 bytes,
                 "service.json",
-                ipfs_api_url.as_ref(),
                 ipfs_gateway_url.as_ref(),
+                ipfs_api_url.as_ref(),
                 true,
             )
             .await
@@ -641,5 +640,13 @@ async fn main() {
 
             println!("{:#?}\n", state);
         }
+    }
+}
+
+fn strip_trailing_slash(url: &Url) -> String {
+    let s = url.as_str();
+    match s.strip_suffix('/') {
+        Some(stripped) => stripped.to_string(),
+        None => s.to_string(),
     }
 }

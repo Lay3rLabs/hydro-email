@@ -12,11 +12,11 @@ env:
   COMPOSE_DOCKER_IMAGE_PROMETHEUS: "{{.DOCKER_IMAGE_PROMETHEUS}}"
   COMPOSE_DOCKER_IMAGE_IPFS: "{{.DOCKER_IMAGE_IPFS}}"
   COMPOSE_PATH_WAVS_HOME: "{{.PATH_WAVS_HOME}}"
-  COMPOSE_PORT_IPFS_API: "{{.PORT_IPFS_API}}"
-  COMPOSE_PORT_IPFS_GATEWAY: "{{.PORT_IPFS_GATEWAY}}"
-  COMPOSE_PORT_WAVS_AGGREGATOR: "{{.PORT_WAVS_AGGREGATOR}}"
-  COMPOSE_PORT_JAEGER_UI: "{{.PORT_JAEGER_UI}}"
-  COMPOSE_PORT_PROMETHEUS_UI: "{{.PORT_PROMETHEUS_UI}}"
+  COMPOSE_PORT_IPFS_API: "{{.LOCAL_PORT_IPFS_API}}"
+  COMPOSE_PORT_IPFS_GATEWAY: "{{.LOCAL_PORT_IPFS_GATEWAY}}"
+  COMPOSE_PORT_WAVS_AGGREGATOR: "{{.LOCAL_PORT_WAVS_AGGREGATOR}}"
+  COMPOSE_PORT_JAEGER_UI: "{{.LOCAL_PORT_JAEGER_UI}}"
+  COMPOSE_PORT_PROMETHEUS_UI: "{{.LOCAL_PORT_PROMETHEUS_UI}}"
 
 tasks:
   start-all:
@@ -43,7 +43,7 @@ tasks:
         msg: "Docker is required but not installed"
     cmds:
       - |
-        echo "Starting IPFS node with API on port {{.PORT_IPFS_API}} and Gateway on port {{.PORT_IPFS_GATEWAY}}"
+        echo "Starting IPFS node with API on port {{.LOCAL_PORT_IPFS_API}} and Gateway on port {{.LOCAL_PORT_IPFS_GATEWAY}}"
       - |
         {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/ipfs.yml" up --force-recreate -d
 
@@ -113,13 +113,13 @@ tasks:
       # Wait for WAVS Aggregator to be up and running
       - |
         for ((i=0; i<{{.TIMEOUT_HEALTH_CHECK}}; i++)); do
-          if nc -z 127.0.0.1 {{.PORT_WAVS_AGGREGATOR}}; then
+          if nc -z 127.0.0.1 {{.LOCAL_PORT_WAVS_AGGREGATOR}}; then
             break
           fi
-          echo "Waiting for Aggregator to start on port {{.PORT_WAVS_AGGREGATOR}}..."
+          echo "Waiting for Aggregator to start on port {{.LOCAL_PORT_WAVS_AGGREGATOR}}..."
           sleep 1
         done
-        if ! nc -z 127.0.0.1 {{.PORT_WAVS_AGGREGATOR}}; then
+        if ! nc -z 127.0.0.1 {{.LOCAL_PORT_WAVS_AGGREGATOR}}; then
           echo "Aggregator did not start after {{.TIMEOUT_HEALTH_CHECK}} seconds"
           exit 1
         fi
@@ -156,7 +156,7 @@ tasks:
         sh: task backend:get-wavs-aggregator-cosmos-credential
       WAVS_LOG_LEVEL: '{{.RUST_LOG | default "info"}}'
     cmds:
-      - echo "Starting WAVS Aggregator on port {{.PORT_WAVS_AGGREGATOR}}"
+      - echo "Starting WAVS Aggregator on port {{.LOCAL_PORT_WAVS_AGGREGATOR}}"
       - |
         {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/wavs-aggregator.yml" up --force-recreate -d
 
@@ -251,12 +251,32 @@ tasks:
   ###################################################################
   ######################## HELPERS  #################################
   ###################################################################
+  get-wavs-url-*:
+    desc: "Get the url for an operator"
+    vars:
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+      # We use 1 as the WAVS_INSTANCE, so subtract 1 to keep the base port the same
+      WAVS_PORT:
+        sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
+      WAVS_REMOTE_URL_ENV_VAR:
+        sh: printf "REMOTE_WAVS_OPERATOR_URL_%s" "{{.WAVS_INSTANCE}}"
+    cmds:
+      - |
+        if [ "{{.DEPLOY_WAVS_TARGET}}" = "local" ]; then
+          echo "http://127.0.0.1:{{.WAVS_PORT}}"
+        elif [ "{{.DEPLOY_WAVS_TARGET}}" = "remote" ]; then
+          echo ${{ .WAVS_REMOTE_URL_ENV_VAR }}
+        else
+          echo "Error: Invalid DEPLOY_WAVS_TARGET '{{.DEPLOY_WAVS_TARGET}}'. Must be one of: local, remote" >&2
+          exit 1
+        fi
+
   get-wavs-operator-port-*:
     desc: "Get the WAVS port for a wavs number"
     vars:
       WAVS_INSTANCE: "{{index .MATCH 0}}"
       # We use 1 as the WAVS_INSTANCE, so subtract 1 to keep the base port the same
-      WAVS_PORT: "{{sub (add .PORT_WAVS_OPERATOR_BASE (atoi .WAVS_INSTANCE)) 1}}"
+      WAVS_PORT: "{{sub (add .LOCAL_PORT_WAVS_OPERATOR_BASE (atoi .WAVS_INSTANCE)) 1}}"
     cmds:
       - echo "{{.WAVS_PORT}}"
 

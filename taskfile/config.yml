@@ -45,32 +45,80 @@ vars:
   DOCKER_IMAGE_GREENMAIL: "greenmail/standalone:latest"
 
   # Ports
-  PORT_WAVS_OPERATOR_BASE: 8123 # Base port for WAVS, subsequent ports will be incremented by 1 for each instance
-  PORT_WAVS_AGGREGATOR: 8200
-  PORT_IPFS_API: 8300
-  PORT_IPFS_GATEWAY: 8301
-  PORT_JAEGER_UI: 16686
-  PORT_PROMETHEUS_UI: 9092
+  LOCAL_PORT_WAVS_OPERATOR_BASE: 8123 # Base port for WAVS, subsequent ports will be incremented by 1 for each instance
+  LOCAL_PORT_WAVS_AGGREGATOR: 8200
+  LOCAL_PORT_IPFS_API: 8300
+  LOCAL_PORT_IPFS_GATEWAY: 8301
+  LOCAL_PORT_JAEGER_UI: 16686
+  LOCAL_PORT_PROMETHEUS_UI: 9092
 
   # Deployment
   TESTNET_CHAIN_KEY: "cosmos:pion-1"
   MAINNET_CHAIN_KEY: "cosmos:neutron-1"
   LOCAL_CHAIN_KEY: "dev:local"
 
-  DEPLOY_TARGET:
-    # neither env vars nor any dynamic vars are available at this stage, so we have to read .env manually
-    sh: grep '^DEPLOY_TARGET=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
+  # neither env vars nor any dynamic vars are available at this stage, so we have to read .env manually
+  DEPLOY_CHAIN_TARGET:
+    sh: grep '^DEPLOY_CHAIN_TARGET=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
+  DEPLOY_WAVS_TARGET:
+    sh: grep '^DEPLOY_WAVS_TARGET=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
+  DEPLOY_IPFS_TARGET:
+    sh: grep '^DEPLOY_IPFS_TARGET=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
 
   CHAIN_KEY:
     sh: |
-      if [ "{{.DEPLOY_TARGET}}" = "local" ]; then
+      if [ "{{.DEPLOY_CHAIN_TARGET}}" = "local" ]; then
         echo "{{.LOCAL_CHAIN_KEY}}"
-      elif [ "{{.DEPLOY_TARGET}}" = "testnet" ]; then
+      elif [ "{{.DEPLOY_CHAIN_TARGET}}" = "testnet" ]; then
         echo "{{.TESTNET_CHAIN_KEY}}"
-      elif [ "{{.DEPLOY_TARGET}}" = "mainnet" ]; then
+      elif [ "{{.DEPLOY_CHAIN_TARGET}}" = "mainnet" ]; then
         echo "{{.MAINNET_CHAIN_KEY}}"
       else
-        echo "Error: Invalid DEPLOY_TARGET '{{.DEPLOY_TARGET}}'. Must be one of: local, testnet, mainnet" >&2
+        echo "Error: Invalid DEPLOY_CHAIN_TARGET '{{.DEPLOY_CHAIN_TARGET}}'. Must be one of: local, testnet, mainnet" >&2
+        exit 1
+      fi
+
+  IPFS_KIND:
+    sh: |
+      if [ "{{.DEPLOY_IPFS_TARGET}}" = "local" ]; then
+        echo "kubo"
+      elif [ "{{.DEPLOY_IPFS_TARGET}}" = "remote" ]; then
+        echo "{{.REMOTE_IPFS_KIND}}"
+      else
+        echo "Error: Invalid DEPLOY_IPFS_TARGET '{{.DEPLOY_IPFS_TARGET}}'. Must be one of: local, remote" >&2
+        exit 1
+      fi
+
+  IPFS_API_URL:
+    sh: |
+      if [ "{{.DEPLOY_IPFS_TARGET}}" = "local" ]; then
+        echo "http://127.0.0.1:{{.LOCAL_PORT_IPFS_API}}"
+      elif [ "{{.DEPLOY_IPFS_TARGET}}" = "remote" ]; then
+        echo "{{.REMOTE_IPFS_API_URL}}"
+      else
+        echo "Error: Invalid DEPLOY_IPFS_TARGET '{{.DEPLOY_IPFS_TARGET}}'. Must be one of: local, remote" >&2
+        exit 1
+      fi
+
+  IPFS_GATEWAY_URL:
+    sh: |
+      if [ "{{.DEPLOY_IPFS_TARGET}}" = "local" ]; then
+        echo "http://127.0.0.1:{{.LOCAL_PORT_IPFS_GATEWAY}}"
+      elif [ "{{.DEPLOY_IPFS_TARGET}}" = "remote" ]; then
+        echo "{{.REMOTE_IPFS_GATEWAY_URL}}"
+      else
+        echo "Error: Invalid DEPLOY_IPFS_TARGET '{{.DEPLOY_IPFS_TARGET}}'. Must be one of: local, remote" >&2
+        exit 1
+      fi
+
+  WAVS_AGGREGATOR_URL:
+    sh: |
+      if [ "{{.DEPLOY_WAVS_TARGET}}" = "local" ]; then
+        echo "http://127.0.0.1:{{.LOCAL_PORT_WAVS_AGGREGATOR}}"
+      elif [ "{{.DEPLOY_WAVS_TARGET}}" = "remote" ]; then
+        echo "{{.REMOTE_WAVS_AGGREGATOR_URL}}"
+      else
+        echo "Error: Invalid DEPLOY_WAVS_TARGET '{{.DEPLOY_WAVS_TARGET}}'. Must be one of: local, remote" >&2
         exit 1
       fi
 

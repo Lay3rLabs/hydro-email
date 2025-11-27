@@ -65,6 +65,9 @@ pub enum CliCommand {
         component: String,
 
         #[arg(long)]
+        ipfs_kind: IpfsKind,
+
+        #[arg(long)]
         ipfs_api_url: Url,
 
         #[arg(long)]
@@ -92,6 +95,9 @@ pub enum CliCommand {
 
         #[arg(long)]
         aggregator_url: Url,
+
+        #[arg(long)]
+        ipfs_kind: IpfsKind,
 
         #[arg(long)]
         ipfs_api_url: Url,
@@ -292,6 +298,29 @@ impl AuthKind {
         match self {
             Self::User => "user",
             Self::ServiceManager => "service_manager",
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ValueEnum)]
+#[clap(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum IpfsKind {
+    Kubo,
+    Pinata,
+}
+
+impl std::fmt::Display for IpfsKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl IpfsKind {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Kubo => "kubo",
+            Self::Pinata => "pinata",
         }
     }
 }

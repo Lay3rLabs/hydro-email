@@ -119,15 +119,12 @@ tasks:
           FILENAME,
           ACTIVATE,
         ]
-    vars:
-      IPFS_API_URL: "http://127.0.0.1:{{.PORT_IPFS_API}}"
-      IPFS_GATEWAY_URL: "http://127.0.0.1:{{.PORT_IPFS_GATEWAY}}"
-      AGGREGATOR_URL: "http://127.0.0.1:{{.PORT_WAVS_AGGREGATOR}}"
     cmds:
       - echo "Uploading Service JSON to IPFS ..."
       - >
         task helper-exec -- upload-service
         --output-file={{.FILENAME}}
+        --ipfs-kind={{.IPFS_KIND}}
         --ipfs-api-url={{.IPFS_API_URL}}
         --ipfs-gateway-url={{.IPFS_GATEWAY_URL}}
         --contract-service-handler-instantiation-file="{{.PATH_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}"
@@ -135,7 +132,7 @@ tasks:
         --component-operator-email-reader-cid-file="{{.PATH_COMPONENT_OPERATOR_EMAIL_READER_CID}}"
         --component-aggregator-submitter-cid-file="{{.PATH_COMPONENT_AGGREGATOR_SUBMITTER_CID}}"
         --trigger-cron-schedule="{{.SERVICE_CRON_SCHEDULE}}"
-        --aggregator-url={{.AGGREGATOR_URL}}
+        --aggregator-url={{.WAVS_AGGREGATOR_URL}}
         --chain={{.CHAIN_KEY}}
         {{ if eq .ACTIVATE "true" }} --activate {{ end }}
       - echo "🚀 Uploaded Service JSON to IPFS and saved info to {{.FILENAME}}"
@@ -285,9 +282,8 @@ tasks:
         sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}" | jq -r '.service_manager_address'
       STAKE_REGISTRY_ADDRESS:
         sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}" | jq -r '.registry_address'
-      WAVS_PORT:
-        sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
-      WAVS_URL: "http://127.0.0.1:{{.WAVS_PORT}}"
+      WAVS_URL:
+        sh: task backend:get-wavs-url-{{.WAVS_INSTANCE}}
     cmds:
       - echo "Setting signing key on service manager {{.SERVICE_MANAGER_ADDRESS}}..."
       - >
@@ -319,9 +315,8 @@ tasks:
     vars:
       WAVS_INSTANCE: "{{index .MATCH 0}}"
       ADDR: "{{index .MATCH 1}}"
-      WAVS_PORT:
-        sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
-      WAVS_URL: "http://127.0.0.1:{{.WAVS_PORT}}"
+      WAVS_URL:
+        sh: task backend:get-wavs-url-{{.WAVS_INSTANCE}}
     cmds:
       - echo "Adding service to operator {{.WAVS_INSTANCE}}..."
       - >
@@ -346,9 +341,8 @@ tasks:
     vars:
       WAVS_INSTANCE: "{{index .MATCH 0}}"
       ADDR: "{{index .MATCH 1}}"
-      WAVS_PORT:
-        sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
-      WAVS_URL: "http://127.0.0.1:{{.WAVS_PORT}}"
+      WAVS_URL:
+        sh: task backend:get-wavs-url-{{.WAVS_INSTANCE}}
     cmds:
       - echo "Deleting service for operator {{.WAVS_INSTANCE}}..."
       - >
@@ -364,13 +358,11 @@ tasks:
   aggregator-register-service:
     requires:
       vars: [ADDR]
-    vars:
-      AGGREGATOR_URL: "http://127.0.0.1:{{.PORT_WAVS_AGGREGATOR}}"
     cmds:
       - echo "Registering service on aggregator..."
       - >
         task helper-exec -- aggregator-register-service
-        --aggregator-url {{.AGGREGATOR_URL}}
+        --aggregator-url {{.WAVS_AGGREGATOR_URL}}
         --service-manager-address "{{.ADDR}}"
         --chain={{.CHAIN_KEY}}
       - echo "🚀 Registered service on aggregator"
@@ -470,14 +462,20 @@ tasks:
     requires:
       vars: [COMPONENT, KIND, FILENAME]
     vars:
-      IPFS_API_URL: "http://127.0.0.1:{{.PORT_IPFS_API}}"
-      IPFS_GATEWAY_URL: "http://127.0.0.1:{{.PORT_IPFS_GATEWAY}}"
       SKIP_UPLOAD_COMPONENTS: '{{ .SKIP_UPLOAD_COMPONENTS | default "false" }}'
     status:
       - '[ "{{.SKIP_UPLOAD_COMPONENTS}}" = "true" ]'
     cmds:
       - echo "Uploading component {{.COMPONENT}} to IPFS..."
-      - task helper-exec -- upload-component --kind {{.KIND}} --component {{.COMPONENT}} --output-file={{.FILENAME}} --ipfs-api-url {{.IPFS_API_URL}} --ipfs-gateway-url {{.IPFS_GATEWAY_URL}} --chain={{.CHAIN_KEY}}
+      - >
+        task helper-exec -- upload-component
+        --kind {{.KIND}}
+        --component {{.COMPONENT}}
+        --output-file={{.FILENAME}}
+        --ipfs-kind {{.IPFS_KIND}}
+        --ipfs-api-url {{.IPFS_API_URL}}
+        --ipfs-gateway-url {{.IPFS_GATEWAY_URL}}
+        --chain={{.CHAIN_KEY}}
       - echo "🚀 Uploaded component {{.COMPONENT}} to IPFS, saved info to {{.FILENAME}}"
 
   ###################################################################

@@ -27,11 +27,6 @@ tasks:
       - echo "Cleaning deployments in {{.PATH_DEPLOYMENTS}}"
       - rm -rf "{{.PATH_DEPLOYMENTS}}"
 
-  foo:
-    desc: "A placeholder task"
-    cmds:
-      - echo "{{.DEPLOY_TARGET}} {{.CHAIN_KEY}}"
-
   lint:
     desc: "Run code formatting and linting checks"
     cmds:
