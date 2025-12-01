@@ -1,15 +1,13 @@
-## Prerequisites
+# Prerequisites
 
-1. The usual stuff (Rust, Docker, NPM, etc.)
-2. Make sure you enable Docker host networking
-3. [Taskfile](https://taskfile.dev/installation)
-4. [Install and configure wkg to pull from wa.dev](https://crates.io/crates/wkg)
-5. Make sure you've pulled all the docker images: `task docker-pull`
-6. Install any `http-server` command that takes `-p <port>` as an argument (for example, `http-server` from cargo)
-7. Make sure you have `wasm32-wasip2` target installed: `rustup target add wasm32-wasip2`
-8. Build the helper binary: `task build-helper` (this will take a while for the first time)
-9. Download the latest WIT definitions: `task components:fetch-wit`
-10. Copy `.example.env` to `.env` and replace the values
+Before getting started, make sure to install all the necessary [Tooling](./Tooling.md)
+
+# First time
+
+1. Pull all the docker images: `task docker-pull`
+2. Build the helper binary: `task build-helper` (this will take a while for the first time)
+3. Download the latest WIT definitions: `task components:fetch-wit`
+4. Copy `.example.env` to `.env` and replace the values
 
 ## TL;DR
 
@@ -52,7 +50,7 @@ See [LocalEmail](./LocalEmail.md) for using the local email server for testing, 
 
 6. Check the on-chain results
 
-This will use the same `DEPLOY_CHAIN_TARGET` env var as the deploy commands to detrermine which chain to query
+This will use the same `DEPLOY_CHAIN_TARGET` env var as the deploy commands to determine which chain to query
 
 ```bash
 task contracts:query-service-handler-emails
