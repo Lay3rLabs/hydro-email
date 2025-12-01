@@ -109,7 +109,7 @@ task components:build-all
 This will execute the operator component to read latest emails 
 
 ```bash
-task components:exec-operator-read-mail
+task components:exec-read-mail
 ```
 
 ## Backend

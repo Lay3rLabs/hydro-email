@@ -1,16 +1,16 @@
 use thiserror::Error;
 
-use crate::connection::ConnectionError;
+use crate::email::imap::connection::ImapConnectionError;
 
 pub type AppResult<T> = std::result::Result<T, AppError>;
 
 #[derive(Debug, Error)]
 pub enum AppError {
     #[error("{0:?}")]
-    Connection(#[from] ConnectionError),
+    ImapConnection(#[from] ImapConnectionError),
 
     #[error("{0:?}")]
-    Client(#[from] imap::Error),
+    ImapClient(#[from] imap::Error),
 
     #[error("Missing env var for {key}")]
     MissingEnv { key: String },

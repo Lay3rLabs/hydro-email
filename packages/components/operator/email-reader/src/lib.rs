@@ -1,8 +1,8 @@
 #![allow(warnings)]
 mod config;
-mod connection;
 mod email;
 mod error;
+mod oauth;
 
 use anyhow::bail;
 use app_contract_api::service_handler::msg::{CustomExecuteMsg, Email};

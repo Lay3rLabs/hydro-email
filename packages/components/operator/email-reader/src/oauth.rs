@@ -1,59 +1,8 @@
-use imap::{Client, Session};
-use wstd::http::{Body, HeaderValue, Request};
+use wstd::http::{Body, Request};
 
-use crate::{
-    config::{ImapConfig, ImapCredentials},
-    connection::Connection,
-    error::{AppError, AppResult},
-};
+use crate::error::{AppError, AppResult};
 
-pub async fn auth_session(
-    client: Client<Connection>,
-    config: &ImapConfig,
-) -> AppResult<Session<Connection>> {
-    match &config.credentials {
-        ImapCredentials::Plain { username, password } => client
-            .login(&username, &password)
-            .map_err(|(e, _)| AppError::Auth(e.into())),
-        ImapCredentials::Gmail {
-            client_id,
-            client_secret,
-            refresh_token,
-        } => {
-            let access_token =
-                fetch_gmail_access_token(client_id, client_secret, refresh_token).await?;
-
-            let username = fetch_gmail_email(&access_token).await?;
-
-            client
-                .authenticate(
-                    "XOAUTH2",
-                    &OAuth2 {
-                        username: &username,
-                        access_token: &access_token,
-                    },
-                )
-                .map_err(|(e, _)| AppError::Auth(e.into()))
-        }
-    }
-}
-
-struct OAuth2<'a> {
-    username: &'a str,
-    access_token: &'a str,
-}
-
-impl imap::Authenticator for OAuth2<'_> {
-    type Response = String;
-    fn process(&self, _: &[u8]) -> Self::Response {
-        format!(
-            "user={}\x01auth=Bearer {}\x01\x01",
-            self.username, self.access_token
-        )
-    }
-}
-
-async fn fetch_gmail_access_token(
+pub async fn fetch_gmail_access_token(
     client_id: &str,
     client_secret: &str,
     refresh_token: &str,
@@ -105,7 +54,7 @@ async fn fetch_gmail_access_token(
     Ok(access_token.to_string())
 }
 
-async fn fetch_gmail_email(access_token: &str) -> AppResult<String> {
+pub async fn fetch_gmail_email_address(access_token: &str) -> AppResult<String> {
     let http_client = wstd::http::Client::new();
 
     let request = Request::get("https://gmail.googleapis.com/gmail/v1/users/me/profile")
