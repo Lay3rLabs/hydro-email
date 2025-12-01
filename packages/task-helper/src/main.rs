@@ -448,7 +448,7 @@ async fn main() {
                     "WAVS_ENV_IMAP_PORT",
                     "WAVS_ENV_IMAP_HOST",
                     "WAVS_ENV_IMAP_TLS",
-                    "WAVS_ENV_IMAP_CREDENTIAL_KIND",
+                    "WAVS_ENV_MAIL_CREDENTIAL_KIND",
                     "WAVS_ENV_IMAP_USERNAME",
                     "WAVS_ENV_IMAP_PASSWORD",
                     "WAVS_ENV_GMAIL_CLIENT_ID",

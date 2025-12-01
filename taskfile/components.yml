@@ -65,6 +65,19 @@ tasks:
           COMPONENT: "{{.ITEM}}"
           KIND: "aggregator"
 
+  build-all-debug:
+    cmds:
+      - for: { var: ALL_OPERATOR_COMPONENTS, parallel: true }
+        task: build-debug
+        vars:
+          COMPONENT: "{{.ITEM}}"
+          KIND: "operator"
+      - for: { var: ALL_AGGREGATOR_COMPONENTS, parallel: true }
+        task: build-debug
+        vars:
+          COMPONENT: "{{.ITEM}}"
+          KIND: "aggregator"
+
   build:
     requires:
       vars: [COMPONENT, KIND]
@@ -79,6 +92,21 @@ tasks:
       - cargo build --release --package {{.PACKAGE}} --target wasm32-wasip2
       - mkdir -p "{{.PATH_COMPONENT_BUILDS}}"
       - cp "./target/wasm32-wasip2/release/{{.FILENAME}}" "{{.PATH_COMPONENT_BUILDS}}/"
+
+  build-debug:
+    requires:
+      vars: [COMPONENT, KIND]
+    vars:
+      BASENAME:
+        sh: task components:basename COMPONENT={{.COMPONENT}} KIND={{.KIND}}
+      PATH_SRC: "packages/components/{{.KIND}}/{{.COMPONENT}}"
+      FILENAME: "{{.BASENAME}}.wasm"
+      PACKAGE: "{{.COMPONENT_PREFIX}}-{{.KIND}}-{{.COMPONENT}}"
+    cmds:
+      - echo "Building {{.KIND}} component {{.COMPONENT}} at {{.PATH_SRC}}"
+      - cargo build --package {{.PACKAGE}} --target wasm32-wasip2
+      - mkdir -p "{{.PATH_COMPONENT_BUILDS}}"
+      - cp "./target/wasm32-wasip2/debug/{{.FILENAME}}" "{{.PATH_COMPONENT_BUILDS}}/"
 
   ### Execution
   exec-read-mail:

@@ -24,7 +24,7 @@ use crate::{
 const TIMEOUT_NS: u64 = 1_000_000_000;
 
 // field order matters: https://github.com/bytecodealliance/wasmtime/issues/11804
-pub struct Connection {
+pub struct ImapConnection {
     _pollable: AsyncPollable,
     _recv_stream: InputStream,
     _send_stream: OutputStream,
@@ -33,7 +33,7 @@ pub struct Connection {
     _sock: Option<TcpSocket>,
 }
 
-impl Connection {
+impl ImapConnection {
     pub async fn new(config: &ImapConfig) -> Result<Self> {
         println!("Connecting to imap server on {config}");
 
@@ -139,10 +139,10 @@ impl TlsConnection {
                 }
                 Some(Ok(Ok(res))) => break res,
                 Some(Ok(Err(e))) => {
-                    return Err(ConnectionError::TlsHandshakeError(e.to_debug_string()));
+                    return Err(ImapConnectionError::TlsHandshakeError(e.to_debug_string()));
                 }
                 Some(Err(_)) => {
-                    return Err(ConnectionError::TlsHandshakeError(
+                    return Err(ImapConnectionError::TlsHandshakeError(
                         "stream consumed".to_string(),
                     ));
                 }
@@ -217,7 +217,7 @@ impl Address {
             match stream.resolve_next_address() {
                 Ok(Some(addr)) => break addr,
                 Ok(None) => {
-                    return Err(ConnectionError::NoAddress {
+                    return Err(ImapConnectionError::NoAddress {
                         host: config.host.to_string(),
                     });
                 }
@@ -259,9 +259,10 @@ impl Address {
     }
 }
 
-type Result<T> = std::result::Result<T, ConnectionError>;
+type Result<T> = std::result::Result<T, ImapConnectionError>;
+
 #[derive(Error, Debug)]
-pub enum ConnectionError {
+pub enum ImapConnectionError {
     #[error("{0:?}")]
     Stream(#[from] StreamError),
 
@@ -281,7 +282,7 @@ pub enum ConnectionError {
     Utf8(#[from] Utf8Error),
 }
 
-impl std::io::Read for Connection {
+impl std::io::Read for ImapConnection {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let data = self
             ._recv_stream
@@ -299,7 +300,7 @@ impl std::io::Read for Connection {
     }
 }
 
-impl std::io::Write for Connection {
+impl std::io::Write for ImapConnection {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         loop {
             let size = self._send_stream.check_write().map_err(|e| {
