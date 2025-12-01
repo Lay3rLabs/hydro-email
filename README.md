@@ -1,8 +1,9 @@
 # Hydro Email 
 
-* Roadmap: [Hydro Email Kanban](https://github.com/orgs/Lay3rLabs/projects/14/views/1) project board.
-* Developers: [GettingStarted](docs/GettingStarted.md) for instructions on how to get started developing and testing the code.
-* Authorization: [Credentials](docs/Credentials.md) for help setting up credentials.
+- [Hydro Email Kanban](https://github.com/orgs/Lay3rLabs/projects/14/views/1): project board.
+- [Tooling](docs/Tooling.md): setup your development environment.
+- [GettingStarted](docs/GettingStarted.md): get started developing and testing the code.
+- [Credentials](docs/Credentials.md): setting up credentials.
 
 # Notes
 
