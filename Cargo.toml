@@ -21,7 +21,7 @@ edition = "2021"
 version = "0.0.1"
 license = "GPL-3.0-or-later"
 authors = ["Layer Labs (Cayman)"]
-repository = "https://github.com/Lay3rLabs/telegram-payments.git"
+repository = "https://github.com/Lay3rLabs/hydro-email.git"
 rust-version = "1.90.0"
 
 [profile.release]
