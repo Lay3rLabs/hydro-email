@@ -46,7 +46,18 @@ impl IpfsFile {
                         "REMOTE_IPFS_PINATA_JWT environment variable not set for Pinata IPFS upload"
                     )
                 })?;
-                Self::upload_pinata(bytes, filename, &jwt, gateway_base).await
+                let group_id = {
+                    let group_id = std::env::var("REMOTE_IPFS_PINATA_GROUP_ID")
+                        .unwrap_or_default()
+                        .trim()
+                        .to_string();
+                    if group_id.is_empty() {
+                        None
+                    } else {
+                        Some(group_id)
+                    }
+                };
+                Self::upload_pinata(bytes, filename, &jwt, group_id.as_deref(), gateway_base).await
             }
         }
     }
@@ -56,13 +67,20 @@ impl IpfsFile {
         filename: &str,
         // The JWT for Pinata authentication
         jwt: &str,
+        group_id: Option<&str>,
         // The base URL for the IPFS gateway (e.g., "http://my-pinata-gateway.com")
         gateway_base: &str,
     ) -> anyhow::Result<Self> {
+        // https://docs.pinata.cloud/api-reference/endpoint/upload-a-file
+
         let part = multipart::Part::bytes(bytes)
             .file_name(filename.to_string())
             .mime_str("application/octet-stream")?;
 
+        // not adding group_id on upload because:
+        // 1. the API docs say this is `group_id`: https://docs.pinata.cloud/api-reference/endpoint/upload-a-file#body-group-id
+        // 2. but the group docs say this is `group`: https://docs.pinata.cloud/files/file-groups#add-or-remove-files-from-a-group
+        // 3. anecdotally, it's flaky, more stable to set it afterwards (e.g. get auth errors if key lacks group access)
         let form = multipart::Form::new()
             .part("file", part)
             .text("network", "public")
@@ -86,7 +104,8 @@ impl IpfsFile {
         #[derive(Debug, Deserialize)]
         #[allow(dead_code)]
         struct PinataResponseData {
-            // pub id: String,
+            #[serde(rename = "id")]
+            pub file_id: String,
             // pub name: String,
             pub cid: String,
             // pub created_at: String,
@@ -104,7 +123,26 @@ impl IpfsFile {
             .json()
             .await?;
 
-        let PinataResponseData { cid, .. } = resp.data;
+        let PinataResponseData { cid, file_id, .. } = resp.data;
+
+        if let Some(group_id) = group_id {
+            // https://docs.pinata.cloud/api-reference/endpoint/add-file-to-group
+            // Add the uploaded file to the specified group
+            let group_url = format!(
+                "https://api.pinata.cloud/v3/groups/public/{}/ids/{}",
+                group_id, file_id
+            );
+            let group_resp = client
+                .put(&group_url)
+                .bearer_auth(jwt)
+                .send()
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to add file to Pinata group: {}", e))?;
+
+            group_resp
+                .error_for_status()
+                .map_err(|e| anyhow::anyhow!("Pinata group error: {}", e))?;
+        }
 
         // Direct file upload - the CID points directly to the file content
         let uri = format!("ipfs://{}", cid);

@@ -161,4 +161,4 @@ vars:
       else
         echo "sudo"
       fi
-  TASK_HELPER_DEV_MODE: "true" # If not "true", uses the built version of the task-helper binary
+  TASK_HELPER_DEV_MODE: "false" # If not "true", uses the built version of the task-helper binary

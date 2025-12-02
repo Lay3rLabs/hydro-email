@@ -107,8 +107,8 @@ impl TestPool {
     async fn instantiate_remote() -> Self {
         let chain_config = TestConfig::get().await.chain_config;
 
-        let mnemonic = std::env::var("ON_CHAIN_TEST_REMOTE_MNEMONIC").expect(
-            "ON_CHAIN_TEST_REMOTE_MNEMONIC environment variable not set for remote testing",
+        let mnemonic = std::env::var("TEST_ON_CHAIN_REMOTE_MNEMONIC").expect(
+            "TEST_ON_CHAIN_REMOTE_MNEMONIC environment variable not set for remote testing",
         );
 
         let pool =

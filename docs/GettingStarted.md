@@ -4,12 +4,14 @@ Before getting started, make sure to install all the necessary [Tooling](./Tooli
 
 # First time
 
+These steps may take a while, but it's only needed the first time you dive into the project
+
 1. Pull all the docker images: `task docker-pull`
-2. Build the helper binary: `task build-helper` (this will take a while for the first time)
+2. Build the helper binary: `task build-helper`
 3. Download the latest WIT definitions: `task components:fetch-wit`
 4. Copy `.example.env` to `.env` and replace the values
 
-## TL;DR
+# Simple flow 
 
 1. Build all contracts, components, and schema
 
@@ -66,7 +68,6 @@ task backend:stop-all
 Each of these steps can be done individually and with more granularity as needed.
 
 Let's step through each of these:
-
 
 
 ## Building
@@ -193,3 +194,9 @@ Just `cargo test` as needed
 
 Jaeger UI is at [http://localhost:16686/](http://localhost:16686/)
 Prometheus is at [http://localhost:9092/](http://localhost:9092/)
+
+### Deployment 
+
+The deployment process goes through a lot of steps, including operator registration and middleware deployment
+
+See the [deploy.yml](../taskfile/deploy.yml) Taskfile for more details on each step
