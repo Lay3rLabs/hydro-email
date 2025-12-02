@@ -225,8 +225,6 @@ tasks:
         registry instantiate-mirror-stake
         --code-id {{.REGISTRY_CODE_ID}}
         --service-manager-code-id {{.MANAGER_CODE_ID}}
-        --threshold-weight {{.THRESHOLD}}
-        --strategy {{.STRATEGIES}}
         --output-path "/output/{{.FILENAME}}"
       - echo "🚀 Instantiated middleware contracts and saved info to {{.FILENAME}}"
 

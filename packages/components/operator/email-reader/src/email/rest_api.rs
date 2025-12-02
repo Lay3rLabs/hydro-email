@@ -85,11 +85,11 @@ pub async fn fetch_unread_message_ids(
 
     #[derive(Debug, Deserialize)]
     struct ListResponse {
-        messages: Vec<ListMessage>,
+        messages: Option<Vec<ListMessage>>,
         #[serde(rename = "nextPageToken")]
-        next_page_token: String,
+        next_page_token: Option<String>,
         #[serde(rename = "resultSizeEstimate")]
-        result_size_estimate: u32,
+        result_size_estimate: Option<u32>,
     }
 
     #[derive(Debug, Deserialize)]
@@ -104,11 +104,10 @@ pub async fn fetch_unread_message_ids(
         ))
     })?;
 
-    Ok(response
-        .messages
-        .into_iter()
-        .map(|m| m.id)
-        .collect::<Vec<String>>())
+    match response.messages {
+        None => return Ok(vec![]),
+        Some(messages) => Ok(messages.into_iter().map(|m| m.id).collect::<Vec<String>>()),
+    }
 }
 
 // Fetch a message by ID

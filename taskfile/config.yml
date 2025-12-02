@@ -36,8 +36,8 @@ vars:
   SERVICE_CRON_SCHEDULE: "*/10 * * * * * *" # Every 10 seconds
 
   # Docker images
-  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.7{{if eq .ARCH "arm64"}}-arm64{{end}}'
-  DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.11{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.8{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.12{{if eq .ARCH "arm64"}}-arm64{{end}}'
   DOCKER_IMAGE_COSMWASM_OPTIMIZER: 'cosmwasm/optimizer{{if eq .ARCH "arm64"}}-arm64{{end}}:0.17.0'
   DOCKER_IMAGE_JAEGER: "jaegertracing/jaeger:2.5.0"
   DOCKER_IMAGE_PROMETHEUS: "prom/prometheus:v3.3.0"
@@ -132,12 +132,10 @@ vars:
   COMPONENT_WITS_OPERATOR_COMMANDER: ["wavs:operator@2.0.0"]
 
   # Middleware
-  DEFAULT_MIDDLEWARE_THRESHOLD: 100
   DEFAULT_MIDDLEWARE_SIGNER_WEIGHT: 100
-  DEFAULT_MIDDLEWARE_STRATEGIES: "test_strategy_1=100 test_strategy_2=200"
 
   # Timeouts
-  TIMEOUT_HEALTH_CHECK: 5 # seconds to wait for service health checks
+  TIMEOUT_HEALTH_CHECK: 30 # seconds to wait for service health checks
 
   # Deployment
   DEPLOY_FILENAME_MIDDLEWARE_SERVICE_MANAGER_CODE_ID: "middleware-service-manager-code-id.json"
@@ -151,7 +149,7 @@ vars:
   DEPLOY_FILENAME_COMPONENT_OPERATOR_EMAIL_READER_CID: "component-operator-email-reader-cid.json"
   DEPLOY_FILENAME_COMPONENT_AGGREGATOR_SUBMITTER_CID: "component-aggregator-submitter-cid.json"
   DEPLOY_FILENAME_SERVICE_CID: "service-cid.json"
-  DEPLOY_PROXY_SALT: "0x676f6f64207669626573203c33"
+  DEPLOY_PROXY_SALT: "0x676f6f64207669626573203c33" # this will be hashed with the code-id to produce the address, so re-deploys won't conflict
 
   # Misc
   DOCKER_SUDO:
@@ -161,4 +159,4 @@ vars:
       else
         echo "sudo"
       fi
-  TASK_HELPER_DEV_MODE: "false" # If not "true", uses the built version of the task-helper binary
+  # TASK_HELPER_DEV_MODE: "true" # if set, uses `cargo run` instead of the built task-helper binary

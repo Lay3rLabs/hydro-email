@@ -11,13 +11,14 @@ use cosmwasm_std::Uint256;
 use layer_climb::prelude::EvmAddr;
 use reqwest::Url;
 use serde::{de::DeserializeOwned, Deserialize};
+use sha2::{Digest, Sha256};
 use wavs_types::{
     ComponentSource, GetSignerRequest, Service, ServiceManager, SignatureKind, SignerResponse,
     Submit, Trigger, Workflow,
 };
 
 use crate::{
-    command::{AuthKind, CliCommand, ContractKind},
+    command::{AuthKind, CliCommand, ContractKind, HexBytes},
     config::path_deployments,
     context::CliContext,
     ipfs::IpfsFile,
@@ -91,24 +92,8 @@ async fn main() {
                 .parse()
                 .unwrap_or_else(|e| panic!("Invalid weight '{}': {}", weight, e));
 
-            // Create the SetSigningKey message
-            // TODO: move this to middleware docker cli
-            let set_signing_key_msg = serde_json::json!({
-                "set_signing_key": {
-                    "operator": evm_operator_address.to_string(),
-                    "signing_key": evm_signing_key_address.to_string(),
-                    "weight": weight_uint.to_string()
-                }
-            });
-
-            let tx_resp = client
-                .contract_execute(&service_manager_address, &set_signing_key_msg, vec![], None)
-                .await
-                .unwrap();
-
-            let service_manager_tx_hash = tx_resp.txhash;
-
             // Create the SetOperatorDetails message
+            // https://github.com/Lay3rLabs/cw-middleware/blob/abf177f139c0e960ab0bdfaa8bbe37c67ba6ce00/packages/contracts/mirror/api/src/stake_registry.rs
             // TODO: move this to middleware docker cli
             let set_operator_details_msg = serde_json::json!({
                 "set_operator_details": {
@@ -132,7 +117,6 @@ async fn main() {
 
             args.output()
                 .write(OutputOperatorSetSigningKey {
-                    service_manager_tx_hash,
                     stake_registry_tx_hash,
                     evm_operator_address,
                     evm_signing_key_address,
@@ -188,6 +172,8 @@ async fn main() {
             proxy_salt,
         } => {
             let client = ctx.signing_client().await.unwrap();
+
+            let proxy_salt = proxy_salt_concat(proxy_code_id, proxy_salt);
 
             let auth = match auth_kind {
                 AuthKind::ServiceManager => {
@@ -249,10 +235,12 @@ async fn main() {
         } => {
             let client = ctx.signing_client().await.unwrap();
 
+            let salt = proxy_salt_concat(code_id, salt);
+
             // borrowing salt for sanity check
             let predicted_addr = client
                 .querier
-                .contract_predict_address(code_id, &client.addr, salt.as_ref())
+                .contract_predict_address(code_id, &client.addr, &salt)
                 .await
                 .unwrap();
 
@@ -265,7 +253,7 @@ async fn main() {
                     "Proxy",
                     &instantiate_msg,
                     vec![],
-                    salt.into_inner(),
+                    salt,
                     false,
                     None,
                 )
@@ -649,4 +637,11 @@ fn strip_trailing_slash(url: &Url) -> String {
         Some(stripped) => stripped.to_string(),
         None => s.to_string(),
     }
+}
+
+fn proxy_salt_concat(code_id: u64, proxy_salt: HexBytes) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(code_id.to_le_bytes());
+    hasher.update(proxy_salt.as_ref());
+    hasher.finalize().to_vec()
 }

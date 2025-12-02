@@ -51,7 +51,7 @@ thiserror = "2.0.12"
 
 # WAVS
 wavs-wasi-utils = "2.3.0"
-wavs-types = { version = "=2.0.0-rc.7", default-features = false, features = [
+wavs-types = { version = "=2.0.0-rc.8", default-features = false, features = [
   "cosmwasm",
 ] }
 
@@ -142,33 +142,22 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 sloggers = "2.2.0"
 
-# Version constraints for Rust 1.86 compatibility in Docker builds
-#
-# Context: wavs-wasi-utils and wavs-types depend on alloy crates with ^1.0.x requirements,
-# which allows Cargo to resolve to v1.1.x. However, alloy v1.1.x requires Rust 1.88+.
-# Our cosmwasm-optimizer Docker image uses Rust 1.86.
-#
-# Solution: These workspace dependencies define the <1.1 version constraints, and the
+# Version constraints for Rust 1.86 compatibility in cosmwasm-optimizer builds
 # packages/version-pins crate depends on them to activate the constraints workspace-wide.
-# This ensures Cargo.lock uses v1.0.x even when regenerated from scratch.
-#
-# Note: Virtual workspaces can't directly constrain transitive dependencies - a workspace
-# member must actually use these dependencies for the constraints to take effect.
-# so we have packages/version-pins depend on them.
-alloy-provider = ">=1.0.37, <1.1"
-alloy-network = ">=1.0.37, <1.1"
-alloy-rpc-types-eth = ">=1.0.37, <1.1"
-alloy-rpc-types-any = ">=1.0.37, <1.1"
-alloy-consensus = ">=1.0.37, <1.1"
-alloy-consensus-any = ">=1.0.37, <1.1"
-alloy-eips = ">=1.0.37, <1.1"
-alloy-network-primitives = ">=1.0.37, <1.1"
-alloy-serde = ">=1.0.37, <1.1"
-alloy-tx-macros = ">=1.0.37, <1.1"
-alloy-eip2930 = ">=0.2.0, <0.2.3"
-alloy-eip7702 = ">=0.6.0, <0.6.3"
-alloy-json-rpc = ">=1.0.37, <1.1"
-alloy-rpc-client = ">=1.0.37, <1.1"
-alloy-signer = ">=1.0.37, <1.1"
-alloy-transport = ">=1.0.37, <1.1"
-alloy-transport-http = ">=1.0.37, <1.1"
+alloy-provider = "=1.0.42"
+alloy-network = "=1.0.42"
+alloy-rpc-types-eth = "=1.0.42"
+alloy-rpc-types-any = "=1.0.42"
+alloy-consensus = "=1.0.42"
+alloy-consensus-any = "=1.0.42"
+alloy-eips = "=1.0.42"
+alloy-network-primitives = "=1.0.42"
+alloy-serde = "=1.0.42"
+alloy-tx-macros = "=1.0.42"
+alloy-json-rpc = "=1.0.42"
+alloy-rpc-client = "=1.0.42"
+alloy-signer = "=1.0.42"
+alloy-transport = "=1.0.42"
+alloy-transport-http = "=1.0.42"
+alloy-eip2930 = "=0.2.1"
+alloy-eip7702 = "=0.6.1"

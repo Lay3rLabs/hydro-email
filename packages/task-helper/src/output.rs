@@ -57,7 +57,6 @@ impl Output {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
 pub struct OutputOperatorSetSigningKey {
-    pub service_manager_tx_hash: String,
     pub stake_registry_tx_hash: String,
     pub evm_operator_address: EvmAddr,
     pub evm_signing_key_address: EvmAddr,
