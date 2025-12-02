@@ -208,12 +208,6 @@ pub enum CliCommand {
 #[derive(Debug, Clone)]
 pub struct HexBytes(Vec<u8>);
 
-impl HexBytes {
-    pub fn into_inner(self) -> Vec<u8> {
-        self.0
-    }
-}
-
 impl AsRef<[u8]> for HexBytes {
     fn as_ref(&self) -> &[u8] {
         &self.0

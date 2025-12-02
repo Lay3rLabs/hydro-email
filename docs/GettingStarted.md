@@ -59,7 +59,13 @@ task contracts:query-service-handler-emails
 task contracts:query-proxy-state
 ```
 
-7. When done, stop all backend services
+7. Iterating is sometimes more convenient by first deleting the active service, before redeploying
+
+```bash
+task deploy:operator-delete-service
+```
+
+8. When done, stop all backend services
 
 ```bash
 task backend:stop-all
