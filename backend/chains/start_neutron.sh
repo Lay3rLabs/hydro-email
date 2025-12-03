@@ -13,10 +13,6 @@ mkdir -p "$PROJECT_ROOT/bin"
 # --- Get binary if missing ---
 if [[ ! -f "$NEUTRON_BIN" ]]; then
   echo "Neutron binary not found at $NEUTRON_BIN"
-  read -p "Download neutrond v8.1.1? [Y/n] " -n 1 -r; echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]] && [[ -n ${REPLY:-} ]]; then
-    echo "Exiting."; exit 1
-  fi
   echo "Downloading neutrond..."
   wget -O "$NEUTRON_BIN" https://github.com/neutron-org/neutron/releases/download/v8.1.1/neutrond-linux-amd64
   chmod +x "$NEUTRON_BIN"
