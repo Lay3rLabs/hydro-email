@@ -31,13 +31,16 @@ pub enum CliCommand {
         #[arg(long, default_value_t = AuthKind::ServiceManager)]
         auth_kind: AuthKind,
 
-        /// The proxy code ID (used to predict address via instantiate2)
         #[arg(long)]
-        proxy_code_id: u64,
+        user_registry_address: String,
 
-        /// The proxy salt (used to predict address via instantiate2)
+        #[clap(flatten)]
+        args: CliArgs,
+    },
+    /// Instantiate the ServiceHandler contract
+    InstantiateUserRegistry {
         #[arg(long)]
-        proxy_salt: HexBytes,
+        code_id: u64,
 
         #[clap(flatten)]
         args: CliArgs,
@@ -49,9 +52,6 @@ pub enum CliCommand {
 
         #[arg(long, required = true, num_args = 1..)]
         admins: Vec<String>,
-
-        #[arg(long)]
-        salt: HexBytes,
 
         #[clap(flatten)]
         args: CliArgs,
@@ -203,9 +203,23 @@ pub enum CliCommand {
         #[clap(flatten)]
         args: CliArgs,
     },
+    ContractRegisterUser {
+        #[arg(long)]
+        email_address: String,
+
+        #[arg(long)]
+        user_registry_address: String,
+
+        #[arg(long)]
+        proxy_address: String,
+
+        #[clap(flatten)]
+        args: CliArgs,
+    },
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct HexBytes(Vec<u8>);
 
 impl AsRef<[u8]> for HexBytes {
@@ -246,6 +260,7 @@ pub struct CliArgs {
 pub enum ContractKind {
     ServiceHandler,
     Proxy,
+    UserRegistry,
 }
 
 impl std::fmt::Display for ContractKind {
@@ -259,6 +274,7 @@ impl ContractKind {
         match self {
             Self::ServiceHandler => "service-handler",
             Self::Proxy => "proxy",
+            Self::UserRegistry => "user-registry",
         }
     }
     pub async fn wasm_bytes(&self) -> Vec<u8> {

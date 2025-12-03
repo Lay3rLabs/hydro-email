@@ -25,3 +25,4 @@ reqwest = {workspace = true}
 cosmwasm-std = {workspace = true}
 const-hex = {workspace = true}
 sha2 = {workspace = true}
+serde_urlencoded = {workspace = true}

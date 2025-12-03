@@ -31,6 +31,7 @@ impl CliContext {
             CliCommand::FaucetTap { args, .. } => args,
             CliCommand::InstantiateServiceHandler { args, .. } => args,
             CliCommand::InstantiateProxy { args, .. } => args,
+            CliCommand::InstantiateUserRegistry { args, .. } => args,
             CliCommand::UploadComponent { args, .. } => args,
             CliCommand::UploadService { args, .. } => args,
             CliCommand::AssertAccountExists { args, .. } => args,
@@ -40,6 +41,7 @@ impl CliContext {
             CliCommand::OperatorSetSigningKey { args, .. } => args,
             CliCommand::QueryServiceHandlerEmails { args, .. } => args,
             CliCommand::QueryProxyState { args, .. } => args,
+            CliCommand::ContractRegisterUser { args, .. } => args,
         }
     }
 
@@ -67,15 +69,7 @@ impl CliContext {
     }
 
     pub fn client_mnemonic(&self) -> Result<String> {
-        std::env::var("CLI_MNEMONIC")
-            .and_then(|m| {
-                if m.is_empty() {
-                    Err(std::env::VarError::NotPresent)
-                } else {
-                    Ok(m)
-                }
-            })
-            .context("Mnemonic not found at CLI_MNEMONIC".to_string())
+        get_env_var("CLI_MNEMONIC")
     }
 
     pub async fn query_client(&self) -> Result<QueryClient> {
@@ -129,4 +123,16 @@ impl CliContext {
             .address_from_pub_key(&signer.public_key().await?)?;
         Ok(address)
     }
+}
+
+pub fn get_env_var(key: &str) -> Result<String> {
+    std::env::var(key)
+        .and_then(|m| {
+            if m.is_empty() {
+                Err(std::env::VarError::NotPresent)
+            } else {
+                Ok(m)
+            }
+        })
+        .context(format!("No value set for env var {key}"))
 }

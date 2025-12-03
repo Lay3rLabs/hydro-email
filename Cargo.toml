@@ -3,6 +3,7 @@ members = [
     "packages/contracts/api",
     "packages/contracts/service-handler",
     "packages/contracts/proxy",
+    "packages/contracts/user-registry",
     "packages/components/operator/email-reader",
     "packages/components/aggregator/submitter",
     "packages/client",
@@ -40,6 +41,7 @@ overflow-checks = true
 # Local
 app-contract-api = { path = "packages/contracts/api" }
 app-contract-service-handler = { path = "packages/contracts/service-handler" }
+app-contract-user-registry = { path = "packages/contracts/user-registry" }
 app-contract-proxy = { path = "packages/contracts/proxy" }
 app-utils = { path = "packages/utils" }
 app-client = { path = "packages/client" }
@@ -94,6 +96,7 @@ cw-multi-test = { version = "3.0.1", features = [
   "cosmwasm_2_0",
 ] }
 cw-utils = "3.0.0"
+cw-storage-macro = "3.0.1"
 
 # Layer-climb
 layer-climb = "0.8.8"

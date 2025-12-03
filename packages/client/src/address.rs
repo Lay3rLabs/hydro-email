@@ -7,6 +7,17 @@ pub enum AnyAddr {
     ClimbAddress(layer_climb::prelude::Address),
 }
 
+// Equality doesn't care about the underlying type, just the value
+impl PartialEq for AnyAddr {
+    fn eq(&self, other: &Self) -> bool {
+        let self_addr: layer_climb::prelude::Address = self.into();
+        let other_addr: layer_climb::prelude::Address = other.into();
+        self_addr == other_addr
+    }
+}
+
+impl Eq for AnyAddr {}
+
 impl std::fmt::Display for AnyAddr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

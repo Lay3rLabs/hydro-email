@@ -1,4 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Addr;
 use wavs_types::contracts::cosmwasm::service_handler::{
     ServiceHandlerExecuteMessages, ServiceHandlerQueryMessages,
 };
@@ -6,8 +7,8 @@ use wavs_types::contracts::cosmwasm::service_handler::{
 #[cw_serde]
 pub struct InstantiateMsg {
     pub auth: Auth,
-    /// The proxy contract address
-    pub proxy_address: String,
+    /// The UserRegistry contract address
+    pub user_registry: String,
 }
 
 #[cw_serde]
@@ -56,6 +57,9 @@ pub enum CustomQueryMsg {
     },
     #[returns(AdminResponse)]
     Admin {},
+
+    #[returns(UserRegistryResponse)]
+    UserRegistry {},
 }
 
 #[cw_serde]
@@ -122,6 +126,11 @@ impl CustomExecuteMsg {
 #[cw_serde]
 pub struct AdminResponse {
     pub admin: Option<String>,
+}
+
+#[cw_serde]
+pub struct UserRegistryResponse {
+    pub address: Addr,
 }
 
 #[cw_serde]

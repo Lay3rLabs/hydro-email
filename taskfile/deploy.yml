@@ -25,10 +25,13 @@ tasks:
           REGISTRY_CODE_ID:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_STAKE_REGISTRY_CODE_ID}}" | jq -r '.code_id'
           FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}"
+      - task: contract-instantiate-user-registry
+        vars:
+          CODE_ID:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_USER_REGISTRY_CODE_ID}}" | jq -r '.code_id'
+          FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_USER_REGISTRY_INSTANTIATE}}"
       - task: contract-instantiate-service-handler
         vars:
-          PROXY_CODE_ID:
-            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_CODE_ID}}" | jq -r '.code_id'
           CODE_ID:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_CODE_ID}}" | jq -r '.code_id'
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}"
@@ -39,6 +42,7 @@ tasks:
           CODE_ID:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_CODE_ID}}" | jq -r '.code_id'
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_PROXY_INSTANTIATE}}"
+      - task: contract-register-user
       - task: service-upload-and-set-uri
         vars:
           ACTIVATE: "true"
@@ -384,6 +388,10 @@ tasks:
         vars:
           CONTRACT: proxy
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_PROXY_CODE_ID}}"
+      - task: contract-upload
+        vars:
+          CONTRACT: user-registry
+          FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_USER_REGISTRY_CODE_ID}}"
 
   contract-upload:
     deps: [assert-account-exists]
@@ -401,8 +409,10 @@ tasks:
   contract-instantiate-service-handler:
     deps: [assert-account-exists]
     requires:
-      vars: [FILENAME, CODE_ID, PROXY_CODE_ID]
+      vars: [FILENAME, CODE_ID]
     vars:
+      USER_REGISTRY_ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_USER_REGISTRY_INSTANTIATE}}" | jq -r '.address'
       AUTH_ADDRESS:
         sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}" | jq -r '.service_manager_address'
       AUTH_KIND: "service_manager"
@@ -414,10 +424,22 @@ tasks:
         --code-id {{.CODE_ID}}
         --auth-address {{.AUTH_ADDRESS}}
         --auth-kind {{.AUTH_KIND}}
-        --proxy-code-id {{.PROXY_CODE_ID}}
-        --proxy-salt {{.DEPLOY_PROXY_SALT}}
+        --user-registry-address {{.USER_REGISTRY_ADDRESS}}
         --chain {{.CHAIN_KEY}}
       - echo "🚀 Instantiated Service Handler contract and saved info to {{.FILENAME}}"
+
+  contract-instantiate-user-registry:
+    deps: [assert-account-exists]
+    requires:
+      vars: [FILENAME, CODE_ID]
+    cmds:
+      - echo "Instantiating User Registry contract..."
+      - >
+        task helper-exec -- instantiate-user-registry
+        --output-file {{.FILENAME}}
+        --code-id {{.CODE_ID}}
+        --chain {{.CHAIN_KEY}}
+      - echo "🚀 Instantiated User Registry contract and saved info to {{.FILENAME}}"
 
   contract-instantiate-proxy:
     deps: [assert-account-exists]
@@ -430,9 +452,26 @@ tasks:
         --output-file {{.FILENAME}}
         --code-id {{.CODE_ID}}
         --admins {{.ADMIN_ADDRESS}}
-        --salt {{.DEPLOY_PROXY_SALT}}
         --chain {{.CHAIN_KEY}}
       - echo "🚀 Instantiated Proxy contract and saved info to {{.FILENAME}}"
+
+  contract-register-user:
+    deps: [assert-account-exists]
+    vars:
+      EMAIL_ADDRESS: "{{.EMAIL_ADDRESS | default .DEPLOY_REGISTER_USER_EMAIL}}"
+      USER_REGISTRY_ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_USER_REGISTRY_INSTANTIATE}}" | jq -r '.address'
+      PROXY_ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_INSTANTIATE}}" | jq -r '.address'
+    cmds:
+      - echo "Registering user..."
+      - >
+        task helper-exec -- contract-register-user
+        --email-address {{.EMAIL_ADDRESS}}
+        --user-registry-address {{.USER_REGISTRY_ADDRESS}}
+        --proxy-address {{.PROXY_ADDRESS}}
+        --chain {{.CHAIN_KEY}}
+      - echo "🚀 Registered user on User Registry contract"
 
   ###################################################################
   ######################## COMPONENTS ###############################

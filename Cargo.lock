@@ -661,11 +661,14 @@ name = "app-contract-api"
 version = "0.0.1"
 dependencies = [
  "anyhow",
- "bincode",
+ "const-hex",
  "cosmwasm-schema",
  "cosmwasm-std",
- "layer-climb-address",
+ "cw-storage-macro",
+ "cw-storage-plus",
+ "mailparse",
  "serde",
+ "sha2 0.10.9",
  "wavs-types",
 ]
 
@@ -700,6 +703,20 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.17",
  "wavs-types",
+]
+
+[[package]]
+name = "app-contract-user-registry"
+version = "0.0.1"
+dependencies = [
+ "app-contract-api",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw2",
+ "schemars 1.1.0",
+ "serde",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -3728,6 +3745,7 @@ dependencies = [
  "app-contract-api",
  "app-contract-proxy",
  "app-contract-service-handler",
+ "app-contract-user-registry",
  "app-tests-common",
  "app-utils",
  "async-trait",
@@ -5522,6 +5540,7 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "sha2 0.10.9",
  "tokio",
  "tracing",

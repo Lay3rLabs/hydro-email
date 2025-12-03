@@ -6,6 +6,7 @@ use crate::client::TestPool;
 
 static SERVICE_HANDLER_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
 static PROXY_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
+static USER_REGISTRY_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
 
 pub struct CodeId {}
 
@@ -21,6 +22,13 @@ impl CodeId {
     pub async fn new_proxy() -> u64 {
         *PROXY_CODE_ID.get_or_init(upload_proxy).await
     }
+
+    #[instrument]
+    pub async fn new_user_registry() -> u64 {
+        *USER_REGISTRY_CODE_ID
+            .get_or_init(upload_user_registry)
+            .await
+    }
 }
 
 async fn upload_service_handler() -> u64 {
@@ -29,6 +37,10 @@ async fn upload_service_handler() -> u64 {
 
 async fn upload_proxy() -> u64 {
     upload(wasm_path("proxy")).await
+}
+
+async fn upload_user_registry() -> u64 {
+    upload(wasm_path("user-registry")).await
 }
 
 #[instrument(skip(wasm_path), fields(path = %wasm_path.as_ref().display()))]

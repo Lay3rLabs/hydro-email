@@ -1,28 +1,60 @@
-use app_contract_api::service_handler::msg::{Email, EmailMessageOnly, InstantiateMsg};
-use cosmwasm_std::{Addr, DepsMut, Order, StdResult, Storage};
+use app_contract_api::{
+    service_handler::msg::{Auth, Email, EmailMessageOnly, InstantiateMsg},
+    user_registry::msg::{ProxyAddressResponse, QueryMsg as UserRegistryQueryMsg, UserId},
+};
+use cosmwasm_std::{Addr, Deps, DepsMut, Order, StdResult, Storage};
+use cw2::set_contract_version;
 use cw_storage_plus::{Bound, Item, Map};
 
+const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// Only set if we take ServiceHandler interface
-pub const SERVICE_MANAGER: Item<Addr> = Item::new("service_manager");
+pub const SERVICE_MANAGER: Item<Addr> = Item::new("service-manager");
 /// Only set in the test approach
 pub const ADMIN: Item<Addr> = Item::new("admin");
-/// Proxy contract address
-const PROXY_ADDRESS: Item<Addr> = Item::new("proxy_address");
+/// User Registry contract address
+const USER_REGISTRY_ADDRESS: Item<Addr> = Item::new("user-registry-address");
 
 const EMAILS_FROM: Map<(&str, u64), EmailMessageOnly> = Map::new("emails-from");
 const EMAILS_IN_ORDER: Map<u64, Email> = Map::new("emails-in-order");
 const EMAIL_ADDRESSES: Map<&str, ()> = Map::new("email-addresses");
 const EMAIL_PAGINATION_ID_COUNT: Item<u64> = Item::new("email-pagination-id-count");
 
-pub fn initialize(deps: &mut DepsMut, msg: &InstantiateMsg) -> StdResult<()> {
+pub fn initialize(deps: &mut DepsMut, msg: InstantiateMsg) -> StdResult<()> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    // Set admin or service manager for later validation
+    match msg.auth {
+        Auth::ServiceManager(service_manager) => {
+            let service_manager_addr = deps.api.addr_validate(&service_manager)?;
+            SERVICE_MANAGER.save(deps.storage, &service_manager_addr)?;
+        }
+        Auth::Admin(admin) => {
+            let admin_addr = deps.api.addr_validate(&admin)?;
+            ADMIN.save(deps.storage, &admin_addr)?;
+        }
+    }
+
     EMAIL_PAGINATION_ID_COUNT.save(deps.storage, &0u64)?;
-    PROXY_ADDRESS.save(deps.storage, &deps.api.addr_validate(&msg.proxy_address)?)?;
+    USER_REGISTRY_ADDRESS.save(deps.storage, &deps.api.addr_validate(&msg.user_registry)?)?;
 
     Ok(())
 }
 
-pub fn proxy_address(store: &dyn Storage) -> StdResult<Addr> {
-    PROXY_ADDRESS.load(store)
+pub fn user_registry_address(store: &dyn Storage) -> StdResult<Addr> {
+    USER_REGISTRY_ADDRESS.load(store)
+}
+
+pub fn proxy_address(deps: Deps, user_id: UserId) -> StdResult<Addr> {
+    let user_registry_addr = user_registry_address(deps.storage)?;
+
+    let resp = deps.querier.query_wasm_smart::<ProxyAddressResponse>(
+        user_registry_addr,
+        &UserRegistryQueryMsg::ProxyAddress { user_id },
+    )?;
+
+    Ok(resp.address)
 }
 
 pub fn push_email(store: &mut dyn Storage, email: &Email) -> StdResult<u64> {
@@ -101,4 +133,8 @@ pub fn list_emails(
         .collect::<StdResult<Vec<(Email, u64)>>>()?;
 
     Ok(emails)
+}
+
+pub fn migrate(storage: &mut dyn Storage) -> StdResult<()> {
+    set_contract_version(storage, CONTRACT_NAME, CONTRACT_VERSION)
 }
