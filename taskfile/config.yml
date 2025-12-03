@@ -161,4 +161,4 @@ vars:
       else
         echo "sudo"
       fi
-  TASK_HELPER_DEV_MODE: "true" # if set, uses `cargo run` instead of the built task-helper binary
+  # TASK_HELPER_DEV_MODE: "true" # if set, uses `cargo run` instead of the built task-helper binary
