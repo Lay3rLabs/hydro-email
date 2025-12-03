@@ -300,14 +300,14 @@ tasks:
       # Wait for Jaeger and Prometheus to be up and running
       # the deps here will ensure that the docker-start-telemetry task is run first
       - |
-        while ! nc -z localhost 16686; do
-          echo "Waiting for Jaeger to start on port 16686..."
+        while ! nc -z localhost {{.LOCAL_PORT_JAEGER_UI}}; do
+          echo "Waiting for Jaeger to start on port {{.LOCAL_PORT_JAEGER_UI}}..."
           sleep 1
         done
       - echo "Jaeger is up and running!"
       - |
-        while ! nc -z localhost 9090; do
-          echo "Waiting for Prometheus to start on port 9090..."
+        while ! nc -z localhost {{.LOCAL_PORT_PROMETHEUS_UI}}; do
+          echo "Waiting for Prometheus to start on port {{.LOCAL_PORT_PROMETHEUS_UI}}..."
           sleep 1
         done
       - echo "Prometheus is up and running!"

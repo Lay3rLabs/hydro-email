@@ -50,7 +50,7 @@ task deploy:all
 
 See [LocalEmail](./LocalEmail.md) for using the local email server for testing, otherwise, use a real email server
 
-6. Check the on-chain results
+6. Check the on-chain results every 10 seconds or so
 
 This will use the same `DEPLOY_CHAIN_TARGET` env var as the deploy commands to determine which chain to query
 
@@ -73,111 +73,20 @@ task backend:stop-all
 
 Each of these steps can be done individually and with more granularity as needed.
 
-Let's step through each of these:
+Check the relevant taskfile for more details.
 
+# Execute a component directly
 
-## Building
-
-### Contracts
-
-To build the contracts (found in `.builds/contracts/`):
-
-```bash
-task contracts:build-all
-```
-
-To generate the schema files from the contracts (found in `.builds/schema/`)
-
-```bash
-task contracts:schema-all
-```
-
-
-### Components
-
-#### First, fetch the wit definitions
-
-This is only needed once, or when the component wits are updated, and you probably already did that in the prerequisites
-
-```bash
-task components:fetch-wit
-```
-
-#### Build the components
-
-```bash
-task components:build-all
-```
-
-#### Execute a component directly
-
-This will execute the operator component to read latest emails 
+This will execute the operator component to check the latest email 
 
 ```bash
 task components:exec-read-mail
 ```
 
-## Backend
-
-### Chains
-
-It may take a while for the chain to startup, be patient... chains will be running in the background via docker and do not require their own terminal
-
-Start the chains
-```bash
-task backend:start-chains
-```
-
-Stop the chains
-```bash
-task backend:stop-chains
-```
-
-### WAVS
-
-Start the operator, aggregator, and telemetry
-```bash
-# Alternatively, if you need more than one operator
-# task backend:start-wavs OPERATORS=3
-task backend:start-wavs
-```
-
-Stop the operator, aggregator, and telemetry
-```bash
-task backend:stop-wavs
-```
-
-### IPFS
-
-Start a local IPFS server
-
-```bash
-task backend:start-ipfs
-```
-
-Stop the local IPFS server
-```bash
-task backend:stop-ipfs
-```
-
-### All Backend Services At Once
-
-Start all backend services
-```bash
-# Alternatively, if you need more than one operator
-# task backend:start-all OPERATORS=3
-task backend:start-all
-```
-
-Stop all backend services
-```bash
-task backend:stop-all
-```
-
-## Testing
+# Testing
 
 
-### Contracts
+## Contracts
 
 All off-chain tests
 ```bash
@@ -192,17 +101,11 @@ Make sure you've [started the chains](#chains) first
 task test:on-chain
 ```
 
-### Components
+## Components
 
 Just `cargo test` as needed
 
-### Telemetry UIs
+## Telemetry UIs
 
-Jaeger UI is at [http://localhost:16686/](http://localhost:16686/)
-Prometheus is at [http://localhost:9092/](http://localhost:9092/)
-
-### Deployment 
-
-The deployment process goes through a lot of steps, including operator registration and middleware deployment
-
-See the [deploy.yml](../taskfile/deploy.yml) Taskfile for more details on each step
+- Jaeger UI is at [http://localhost:16686/](http://localhost:16686/)
+- Prometheus is at [http://localhost:9092/](http://localhost:9092/)
