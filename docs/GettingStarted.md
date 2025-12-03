@@ -6,10 +6,10 @@ Before getting started, make sure to install all the necessary [Tooling](./Tooli
 
 These steps may take a while, but it's only needed the first time you dive into the project
 
-1. Pull all the docker images: `task docker-pull`
-2. Build the helper binary: `task build-helper`
+1. Copy `.example.env` to `.env` and replace the values
+2. Pull all the docker images: `task docker-pull`
 3. Download the latest WIT definitions: `task components:fetch-wit`
-4. Copy `.example.env` to `.env` and replace the values
+4. Build the helper binary: `task build-helper`
 
 # Simple flow 
 
