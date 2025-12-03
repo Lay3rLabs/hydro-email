@@ -1,6 +1,7 @@
 //! Abstraction specifically for the on-chain multi-test environment
 pub mod proxy;
 pub mod service_handler;
+pub mod user_registry;
 
 use app_client::{address::AnyAddr, executor::AnyExecutor, querier::AnyQuerier};
 use app_utils::{

@@ -13,7 +13,7 @@ use crate::{
 
 use app_contract_api::service_handler::msg::{
     AdminResponse, CustomExecuteMsg, CustomQueryMsg, Email, EmailAddrsResponse, ExecuteMsg,
-    QueryMsg,
+    QueryMsg, UserRegistryResponse,
 };
 
 #[derive(Clone)]
@@ -21,6 +21,16 @@ pub struct ServiceHandlerContract {
     pub querier: ServiceHandlerQuerier,
     pub executor: ServiceHandlerExecutor,
     pub address: AnyAddr,
+}
+
+impl ServiceHandlerContract {
+    pub fn new(querier: AnyQuerier, executor: AnyExecutor, address: AnyAddr) -> Self {
+        Self {
+            querier: ServiceHandlerQuerier::new(querier, address.clone()),
+            executor: ServiceHandlerExecutor::new(executor, address.clone()),
+            address,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -38,6 +48,14 @@ impl ServiceHandlerQuerier {
         msg: &QueryMsg,
     ) -> Result<RESP> {
         self.inner.contract_query(&self.addr, msg).await
+    }
+
+    pub async fn user_registry_address(&self) -> Result<AnyAddr> {
+        let resp: UserRegistryResponse = self
+            .query(&QueryMsg::Custom(CustomQueryMsg::UserRegistry {}))
+            .await?;
+
+        Ok(AnyAddr::from(resp.address))
     }
 
     pub async fn admin(&self) -> Result<Option<String>> {

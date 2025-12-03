@@ -16,6 +16,13 @@ cfg_if::cfg_if! {
     }
 }
 
+cfg_if::cfg_if! {
+    if #[cfg(feature = "client-pool")] {
+        pub type SigningClientWrapper = Arc<deadpool::managed::Object<layer_climb::pool::SigningClientPoolManager>>;
+        pub type SigningClientWrapperRef<'a> = &'a deadpool::managed::Object<layer_climb::pool::SigningClientPoolManager>;
+    }
+}
+
 #[derive(Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyExecutor {
@@ -23,7 +30,7 @@ pub enum AnyExecutor {
     #[cfg(feature = "client-pool")]
     ClimbPool(layer_climb::pool::SigningClientPool),
     #[cfg(feature = "client-pool")]
-    ClimbPoolObject(Arc<deadpool::managed::Object<layer_climb::pool::SigningClientPoolManager>>),
+    ClimbPoolObject(SigningClientWrapper),
     #[cfg(feature = "multitest")]
     MultiTest {
         app: AppWrapper,
@@ -45,12 +52,8 @@ impl From<layer_climb::pool::SigningClientPool> for AnyExecutor {
 }
 
 #[cfg(feature = "client-pool")]
-impl From<Arc<deadpool::managed::Object<layer_climb::pool::SigningClientPoolManager>>>
-    for AnyExecutor
-{
-    fn from(
-        client: Arc<deadpool::managed::Object<layer_climb::pool::SigningClientPoolManager>>,
-    ) -> AnyExecutor {
+impl From<SigningClientWrapper> for AnyExecutor {
+    fn from(client: SigningClientWrapper) -> AnyExecutor {
         AnyExecutor::ClimbPoolObject(client)
     }
 }

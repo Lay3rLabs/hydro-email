@@ -6,19 +6,19 @@ mod output;
 
 use std::process::exit;
 
+use app_client::contracts::user_registry::UserRegistryContract;
 use app_utils::{faucet, tracing::tracing_init};
 use cosmwasm_std::Uint256;
 use layer_climb::prelude::EvmAddr;
 use reqwest::Url;
 use serde::{de::DeserializeOwned, Deserialize};
-use sha2::{Digest, Sha256};
 use wavs_types::{
     ComponentSource, GetSignerRequest, Service, ServiceManager, SignatureKind, SignerResponse,
     Submit, Trigger, Workflow,
 };
 
 use crate::{
-    command::{AuthKind, CliCommand, ContractKind, HexBytes},
+    command::{AuthKind, CliCommand, ContractKind},
     config::path_deployments,
     context::CliContext,
     ipfs::IpfsFile,
@@ -168,12 +168,9 @@ async fn main() {
             auth_kind,
             args,
             code_id,
-            proxy_code_id,
-            proxy_salt,
+            user_registry_address,
         } => {
             let client = ctx.signing_client().await.unwrap();
-
-            let proxy_salt = proxy_salt_concat(proxy_code_id, proxy_salt);
 
             let auth = match auth_kind {
                 AuthKind::ServiceManager => {
@@ -193,15 +190,9 @@ async fn main() {
                 }
             };
 
-            let proxy_address = client
-                .querier
-                .contract_predict_address(proxy_code_id, &client.addr, proxy_salt.as_ref())
-                .await
-                .unwrap();
-
             let instantiate_msg = app_contract_api::service_handler::msg::InstantiateMsg {
                 auth,
-                proxy_address: proxy_address.to_string(),
+                user_registry: user_registry_address,
             };
 
             let (contract_addr, tx_resp) = client
@@ -227,43 +218,50 @@ async fn main() {
                 .await
                 .unwrap();
         }
-        CliCommand::InstantiateProxy {
-            admins,
-            args,
-            code_id,
-            salt,
-        } => {
+        CliCommand::InstantiateUserRegistry { args, code_id } => {
             let client = ctx.signing_client().await.unwrap();
 
-            let salt = proxy_salt_concat(code_id, salt);
-
-            // borrowing salt for sanity check
-            let predicted_addr = client
-                .querier
-                .contract_predict_address(code_id, &client.addr, &salt)
-                .await
-                .unwrap();
-
-            let instantiate_msg = app_contract_api::proxy::msg::InstantiateMsg { admins };
+            let instantiate_msg = app_contract_api::user_registry::msg::InstantiateMsg {
+                admins: vec![ctx.wallet_addr().await.unwrap().to_string()],
+            };
 
             let (contract_addr, tx_resp) = client
-                .contract_instantiate2(
+                .contract_instantiate(
                     None,
                     code_id,
-                    "Proxy",
+                    "User Registry",
                     &instantiate_msg,
                     vec![],
-                    salt,
-                    false,
                     None,
                 )
                 .await
                 .unwrap();
 
-            // sanity check
-            if predicted_addr != contract_addr {
-                panic!("Predicted address does not match instantiated address (predicted: {predicted_addr}, received: {contract_addr})");
-            }
+            println!("Instantiated User Registry contract at address: {contract_addr}");
+
+            args.output()
+                .write(OutputContractInstantiate {
+                    kind: ContractKind::UserRegistry,
+                    address: contract_addr.to_string(),
+                    tx_hash: tx_resp.txhash,
+                })
+                .await
+                .unwrap();
+        }
+
+        CliCommand::InstantiateProxy {
+            admins,
+            args,
+            code_id,
+        } => {
+            let client = ctx.signing_client().await.unwrap();
+
+            let instantiate_msg = app_contract_api::proxy::msg::InstantiateMsg { admins };
+
+            let (contract_addr, tx_resp) = client
+                .contract_instantiate(None, code_id, "Proxy", &instantiate_msg, vec![], None)
+                .await
+                .unwrap();
 
             println!("Instantiated Proxy contract at address: {contract_addr}");
 
@@ -628,6 +626,36 @@ async fn main() {
 
             println!("{:#?}\n", state);
         }
+        CliCommand::ContractRegisterUser {
+            email_address,
+            user_registry_address,
+            proxy_address,
+            args: _,
+        } => {
+            let client = ctx.signing_client().await.unwrap();
+
+            let user_registry_address = ctx.parse_address(&user_registry_address).await.unwrap();
+
+            let proxy_address = ctx.parse_address(&proxy_address).await.unwrap();
+
+            let contract = UserRegistryContract::new(
+                client.querier.clone().into(),
+                client.into(),
+                user_registry_address.into(),
+            );
+
+            let (tx_resp, user_id) = contract
+                .executor
+                .register_user_email(&email_address, proxy_address.clone().into())
+                .await
+                .unwrap();
+
+            println!("Registered user");
+            println!("TX Hash: {}", tx_resp.unchecked_into_tx_response().txhash);
+            println!("Proxy address: {}", proxy_address);
+            println!("Email address: {}", email_address);
+            println!("User ID: {}", user_id);
+        }
     }
 }
 
@@ -637,11 +665,4 @@ fn strip_trailing_slash(url: &Url) -> String {
         Some(stripped) => stripped.to_string(),
         None => s.to_string(),
     }
-}
-
-fn proxy_salt_concat(code_id: u64, proxy_salt: HexBytes) -> Vec<u8> {
-    let mut hasher = Sha256::new();
-    hasher.update(code_id.to_le_bytes());
-    hasher.update(proxy_salt.as_ref());
-    hasher.finalize().to_vec()
 }

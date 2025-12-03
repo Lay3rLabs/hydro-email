@@ -59,13 +59,16 @@ async fn inner(trigger_action: TriggerAction) -> anyhow::Result<Vec<WasmResponse
                 hasher.finalize().to_vec()
             };
 
+            let email = Email {
+                from: email.original_sender,
+                subject: email.subject.unwrap_or_default(),
+            };
+            println!("Got email: {:#?}", email);
+
             return Ok(vec![WasmResponse {
-                payload: CustomExecuteMsg::Email(Email {
-                    from: email.original_sender,
-                    subject: email.subject.unwrap_or_default(),
-                })
-                .encode()
-                .map_err(|e| anyhow::anyhow!("{e:?}"))?,
+                payload: CustomExecuteMsg::Email(email)
+                    .encode()
+                    .map_err(|e| anyhow::anyhow!("{e:?}"))?,
                 ordering: None,
                 event_id_salt: Some(event_id_salt),
             }]);

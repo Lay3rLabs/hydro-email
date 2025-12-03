@@ -11,35 +11,32 @@ use crate::{
     querier::AnyQuerier,
 };
 
-use app_contract_api::proxy::{
-    msg::{ExecuteMsg, QueryMsg, StateResponse},
-    state::State,
-};
+use app_contract_api::user_registry::msg::{ExecuteMsg, ProxyAddressResponse, QueryMsg, UserId};
 
 #[derive(Clone)]
-pub struct ProxyContract {
-    pub querier: ProxyQuerier,
-    pub executor: ProxyExecutor,
+pub struct UserRegistryContract {
+    pub querier: UserRegistryQuerier,
+    pub executor: UserRegistryExecutor,
     pub address: AnyAddr,
 }
 
-impl ProxyContract {
+impl UserRegistryContract {
     pub fn new(querier: AnyQuerier, executor: AnyExecutor, address: AnyAddr) -> Self {
         Self {
-            querier: ProxyQuerier::new(querier, address.clone()),
-            executor: ProxyExecutor::new(executor, address.clone()),
+            querier: UserRegistryQuerier::new(querier, address.clone()),
+            executor: UserRegistryExecutor::new(executor, address.clone()),
             address,
         }
     }
 }
 
 #[derive(Clone)]
-pub struct ProxyQuerier {
+pub struct UserRegistryQuerier {
     pub inner: AnyQuerier,
     pub addr: AnyAddr,
 }
 
-impl ProxyQuerier {
+impl UserRegistryQuerier {
     pub fn new(inner: AnyQuerier, addr: AnyAddr) -> Self {
         Self { inner, addr }
     }
@@ -50,20 +47,21 @@ impl ProxyQuerier {
         self.inner.contract_query(&self.addr, msg).await
     }
 
-    pub async fn state(&self) -> Result<State> {
-        let resp: StateResponse = self.query(&QueryMsg::State {}).await?;
+    pub async fn proxy_address_email(&self, email: &str) -> Result<AnyAddr> {
+        let user_id = UserId::new_email_address(email);
+        let resp: ProxyAddressResponse = self.query(&QueryMsg::ProxyAddress { user_id }).await?;
 
-        Ok(resp.state)
+        Ok(AnyAddr::from(resp.address))
     }
 }
 
 #[derive(Clone)]
-pub struct ProxyExecutor {
+pub struct UserRegistryExecutor {
     pub inner: AnyExecutor,
     pub addr: AnyAddr,
 }
 
-impl ProxyExecutor {
+impl UserRegistryExecutor {
     pub fn new(inner: AnyExecutor, addr: AnyAddr) -> Self {
         Self { inner, addr }
     }
@@ -73,5 +71,22 @@ impl ProxyExecutor {
         funds: &[cosmwasm_std::Coin],
     ) -> Result<AnyTxResponse> {
         self.inner.contract_exec(&self.addr, msg, funds).await
+    }
+
+    pub async fn register_user_email(
+        &self,
+        email: &str,
+        proxy_address: AnyAddr,
+    ) -> Result<(AnyTxResponse, UserId)> {
+        let user_id = UserId::new_email_address(&email);
+
+        let msg = ExecuteMsg::RegisterUser {
+            user_id: user_id.clone(),
+            proxy_address: proxy_address.to_string(),
+        };
+
+        let tx_resp = self.exec(&msg, &[]).await?;
+
+        Ok((tx_resp, user_id))
     }
 }

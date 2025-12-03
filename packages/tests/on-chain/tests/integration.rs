@@ -1,7 +1,10 @@
+use std::sync::Arc;
+
 use app_tests_common::shared_tests::integration::test_integration;
 use app_utils::tracing::{env_init, tracing_init};
 use on_chain_tests::client::{
-    proxy::ProxyClient, service_handler::ServiceHandlerClient, AppClient,
+    proxy::ProxyClient, service_handler::ServiceHandlerClient, user_registry::UserRegistryClient,
+    AppClient,
 };
 
 #[tokio::test]
@@ -10,10 +13,14 @@ async fn integration() {
     env_init();
 
     let app_client = AppClient::new().await;
-    let proxy_creator = app_client.pool().get().await.unwrap();
-    let proxy_address = ProxyClient::predict_address(&proxy_creator).await;
-    let service_handler = ServiceHandlerClient::new(app_client.clone(), proxy_address, None).await;
-    let proxy = ProxyClient::new(proxy_creator, vec![service_handler.address.clone()]).await;
+    let client = Arc::new(app_client.pool().get().await.unwrap());
 
-    test_integration(service_handler, proxy).await;
+    let user_registry = UserRegistryClient::new(client.clone(), None).await;
+    let service_handler =
+        ServiceHandlerClient::new(client.clone(), user_registry.address, None).await;
+
+    let proxy = ProxyClient::new(client.clone(), Some(vec![service_handler.address.clone()])).await;
+    let wrong_proxy = ProxyClient::new(client, Some(vec![service_handler.address.clone()])).await;
+
+    test_integration(service_handler, proxy, wrong_proxy).await;
 }
