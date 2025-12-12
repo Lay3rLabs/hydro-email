@@ -36,8 +36,8 @@ vars:
   SERVICE_CRON_SCHEDULE: "*/10 * * * * * *" # Every 10 seconds
 
   # Docker images
-  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.8{{if eq .ARCH "arm64"}}-arm64{{end}}'
-  DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.12{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.9{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.14{{if eq .ARCH "arm64"}}-arm64{{end}}'
   DOCKER_IMAGE_COSMWASM_OPTIMIZER: 'cosmwasm/optimizer{{if eq .ARCH "arm64"}}-arm64{{end}}:0.17.0'
   DOCKER_IMAGE_JAEGER: "jaegertracing/jaeger:2.5.0"
   DOCKER_IMAGE_PROMETHEUS: "prom/prometheus:v3.3.0"
