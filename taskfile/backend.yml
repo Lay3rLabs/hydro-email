@@ -242,11 +242,14 @@ tasks:
     vars:
       USERNAME:
         sh: echo "${WAVS_ENV_IMAP_USERNAME}"
+      FROM:
+        sh: echo "${DEPLOY_REGISTER_USER_EMAIL}"
       MSG: '{{.MSG | default "Hello, World!"}}'
     cmds:
       - |
-        printf "EHLO localhost\r\nMAIL FROM:<sender@example.com>\r\nRCPT TO:<{{.USERNAME}}>\r\nDATA\r\nSubject: Test email via GreenMail\r\nFrom: sender@example.com\r\nTo: {{.USERNAME}}\r\n\r\n{{.MSG}}\r\n.\r\nQUIT\r\n" \
+        printf "EHLO localhost\r\nMAIL FROM:<{{.FROM}}>\r\nRCPT TO:<{{.USERNAME}}>\r\nDATA\r\nSubject: Test email via GreenMail\r\nFrom: {{.FROM}}\r\nTo: {{.USERNAME}}\r\n\r\n{{.MSG}}\r\n.\r\nQUIT\r\n" \
         | nc localhost 3025
+      - echo "Email sent from {{.FROM}} to {{.USERNAME}}"
 
   ###################################################################
   ######################## HELPERS  #################################

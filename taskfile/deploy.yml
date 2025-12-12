@@ -464,7 +464,7 @@ tasks:
       PROXY_ADDRESS:
         sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_INSTANTIATE}}" | jq -r '.address'
     cmds:
-      - echo "Registering user..."
+      - echo "Registering user for {{.EMAIL_ADDRESS}}..."
       - >
         task helper-exec -- contract-register-user
         --email-address {{.EMAIL_ADDRESS}}
