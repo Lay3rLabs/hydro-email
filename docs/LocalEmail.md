@@ -17,7 +17,7 @@ task backend:mail-server-send
 Now, assuming you've set the `.env` credentials for a local test user, you can check the inbox as usual:
 
 ```bash
-task components:exec-operator-read-mail
+task components:exec-read-mail
 ```
 
 When you're finished, you can stop the local mail server:
