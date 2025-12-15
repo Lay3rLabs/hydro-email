@@ -667,7 +667,6 @@ dependencies = [
  "cw-storage-macro",
  "cw-storage-plus",
  "mailparse",
- "proxy",
  "serde",
  "sha2 0.10.9",
  "wavs-types",
@@ -3116,14 +3115,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "interface"
-version = "0.0.1"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
-]
-
-[[package]]
 name = "ipnet"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4205,21 +4196,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.110",
-]
-
-[[package]]
-name = "proxy"
-version = "0.0.1"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus",
- "cw2",
- "interface",
- "schemars 1.1.0",
- "serde",
- "test-utils",
- "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -5679,13 +5655,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2111ef44dae28680ae9752bb89409e7310ca33a8c621ebe7b106cf5c928b3ac0"
 dependencies = [
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "test-utils"
-version = "0.0.1"
-dependencies = [
- "cosmwasm-std",
 ]
 
 [[package]]

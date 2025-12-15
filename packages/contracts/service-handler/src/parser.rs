@@ -1,10 +1,10 @@
 use app_contract_api::proxy::msg::ExecuteMsg as ProxyExecuteMsg;
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Coin, Uint128};
 
 /// Formats:
 /// - "forward" or "deposit" or empty → ForwardToInflow
-/// - "withdraw ADDRESS AMOUNT" → WithdrawFunds
-/// - "withdraw_receipt ADDRESS AMOUNT" → WithdrawReceiptTokens
+/// - "withdraw ADDRESS DENOM AMOUNT" → WithdrawFunds
+/// - "withdraw_receipt ADDRESS DENOM AMOUNT" → WithdrawReceiptTokens
 pub fn parse_email_action(subject: &str) -> ProxyExecuteMsg {
     let text = subject.trim().to_lowercase();
 
@@ -12,14 +12,14 @@ pub fn parse_email_action(subject: &str) -> ProxyExecuteMsg {
         return ProxyExecuteMsg::ForwardToInflow {};
     }
 
-    // "withdraw ADDRESS AMOUNT"
+    // "withdraw ADDRESS DENOM AMOUNT"
     if let Some(rest) = text.strip_prefix("withdraw ") {
         if let Some(msg) = parse_withdraw(rest, false) {
             return msg;
         }
     }
 
-    // "withdraw_receipt ADDRESS AMOUNT"
+    // "withdraw_receipt ADDRESS DENOM AMOUNT"
     if let Some(rest) = text.strip_prefix("withdraw_receipt ") {
         if let Some(msg) = parse_withdraw(rest, true) {
             return msg;
@@ -31,14 +31,16 @@ pub fn parse_email_action(subject: &str) -> ProxyExecuteMsg {
 
 fn parse_withdraw(rest: &str, is_receipt: bool) -> Option<ProxyExecuteMsg> {
     let parts: Vec<&str> = rest.split_whitespace().collect();
-    if parts.len() >= 2 {
+    if parts.len() >= 3 {
         let address = parts[0].to_string();
-        let amount: Uint128 = parts[1].parse().ok()?;
+        let denom = parts[1].to_string();
+        let amount: Uint128 = parts[2].parse().ok()?;
+        let coin = Coin { denom, amount };
 
         return Some(if is_receipt {
-            ProxyExecuteMsg::WithdrawReceiptTokens { address, amount }
+            ProxyExecuteMsg::WithdrawReceiptTokens { address, coin }
         } else {
-            ProxyExecuteMsg::WithdrawFunds { address, amount }
+            ProxyExecuteMsg::WithdrawFunds { address, coin }
         });
     }
     None
@@ -70,11 +72,12 @@ mod tests {
 
     #[test]
     fn test_withdraw_funds() {
-        let msg = parse_email_action("withdraw neutron1abc 1000000");
+        let msg = parse_email_action("withdraw neutron1abc uatom 1000000");
         match msg {
-            ProxyExecuteMsg::WithdrawFunds { address, amount } => {
+            ProxyExecuteMsg::WithdrawFunds { address, coin } => {
                 assert_eq!(address, "neutron1abc");
-                assert_eq!(amount.u128(), 1000000);
+                assert_eq!(coin.denom, "uatom");
+                assert_eq!(coin.amount.u128(), 1000000);
             }
             _ => panic!("expected WithdrawFunds"),
         }
@@ -82,11 +85,12 @@ mod tests {
 
     #[test]
     fn test_withdraw_receipt() {
-        let msg = parse_email_action("withdraw_receipt neutron1xyz 500000");
+        let msg = parse_email_action("withdraw_receipt neutron1xyz factory/vault/share 500000");
         match msg {
-            ProxyExecuteMsg::WithdrawReceiptTokens { address, amount } => {
+            ProxyExecuteMsg::WithdrawReceiptTokens { address, coin } => {
                 assert_eq!(address, "neutron1xyz");
-                assert_eq!(amount.u128(), 500000);
+                assert_eq!(coin.denom, "factory/vault/share");
+                assert_eq!(coin.amount.u128(), 500000);
             }
             _ => panic!("expected WithdrawReceiptTokens"),
         }
@@ -103,7 +107,7 @@ mod tests {
             ProxyExecuteMsg::ForwardToInflow {}
         ));
         assert!(matches!(
-            parse_email_action("withdraw addr notanumber"),
+            parse_email_action("withdraw addr denom notanumber"),
             ProxyExecuteMsg::ForwardToInflow {}
         ));
         assert!(matches!(

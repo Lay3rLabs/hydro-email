@@ -1,8 +1,14 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Coin;
 
 use super::state::State;
 
-pub use hydro_inflow_proxy::msg::ExecuteMsg;
+#[cw_serde]
+pub enum ExecuteMsg {
+    ForwardToInflow {},
+    WithdrawReceiptTokens { address: String, coin: Coin },
+    WithdrawFunds { address: String, coin: Coin },
+}
 
 #[cw_serde]
 pub struct InstantiateMsg {
