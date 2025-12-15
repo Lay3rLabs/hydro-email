@@ -667,6 +667,7 @@ dependencies = [
  "cw-storage-macro",
  "cw-storage-plus",
  "mailparse",
+ "proxy",
  "serde",
  "sha2 0.10.9",
  "wavs-types",

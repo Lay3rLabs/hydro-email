@@ -97,6 +97,7 @@ impl From<&Email> for EmailMessageOnly {
 pub struct Email {
     pub from: String,
     pub subject: String,
+    pub body: Option<String>,
 }
 
 #[cw_serde]

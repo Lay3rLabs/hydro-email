@@ -14,7 +14,7 @@ members = [
     "packages/tests/common",
     "packages/task-helper",
     "hydro/packages/interface",
-    "hydro/contracts/inflow/proxy"
+    "hydro/contracts/inflow/proxy",
 ]
 
 resolver = "2"
@@ -44,6 +44,8 @@ overflow-checks = true
 interface = {path = "hydro/packages/interface", features = ["cosmwasm_compat"] }
 proxy = {path = "hydro/contracts/inflow/proxy", features = ["cosmwasm_compat"] }
 app-contract-api = { path = "packages/contracts/api" }
+hydro-interface = { path = "hydro/packages/interface", package = "interface" }
+hydro-inflow-proxy = { path = "hydro/contracts/inflow/proxy", package = "proxy" }
 app-contract-service-handler = { path = "packages/contracts/service-handler" }
 app-contract-user-registry = { path = "packages/contracts/user-registry" }
 app-contract-proxy = { path = "packages/contracts/proxy" }

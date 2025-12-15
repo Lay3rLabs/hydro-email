@@ -3,8 +3,8 @@ use app_contract_api::proxy::{
     state::{ActionState, State},
 };
 use cosmwasm_std::{
-    entry_point, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, Uint128,
+    entry_point, to_json_binary, Addr, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult,
 };
 use cw2::set_contract_version;
 
@@ -50,12 +50,10 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::ForwardToInflow {} => forward_to_inflow(deps),
-        ExecuteMsg::WithdrawReceiptTokens { address, amount } => {
-            withdraw_receipt_tokens(deps, info, address, amount)
+        ExecuteMsg::WithdrawReceiptTokens { address, coin } => {
+            withdraw_receipt_tokens(deps, info, address, coin)
         }
-        ExecuteMsg::WithdrawFunds { address, amount } => {
-            withdraw_funds(deps, info, address, amount)
-        }
+        ExecuteMsg::WithdrawFunds { address, coin } => withdraw_funds(deps, info, address, coin),
     }
 }
 
@@ -72,18 +70,18 @@ fn withdraw_receipt_tokens(
     deps: DepsMut,
     info: MessageInfo,
     address: String,
-    amount: Uint128,
+    coin: Coin,
 ) -> Result<Response, ContractError> {
-    process_withdrawal(deps, info, address, amount, ActionKind::ReceiptTokens)
+    process_withdrawal(deps, info, address, coin, ActionKind::ReceiptTokens)
 }
 
 fn withdraw_funds(
     deps: DepsMut,
     info: MessageInfo,
     address: String,
-    amount: Uint128,
+    coin: Coin,
 ) -> Result<Response, ContractError> {
-    process_withdrawal(deps, info, address, amount, ActionKind::Funds)
+    process_withdrawal(deps, info, address, coin, ActionKind::Funds)
 }
 
 enum ActionKind {
@@ -95,7 +93,7 @@ fn process_withdrawal(
     deps: DepsMut,
     info: MessageInfo,
     address: String,
-    amount: Uint128,
+    coin: Coin,
     kind: ActionKind,
 ) -> Result<Response, ContractError> {
     let recipient = deps.api.addr_validate(&address)?;
@@ -106,11 +104,11 @@ fn process_withdrawal(
     state.last_action = match kind {
         ActionKind::ReceiptTokens => ActionState::WithdrawReceiptTokens {
             recipient: recipient.clone(),
-            amount,
+            coin: coin.clone(),
         },
         ActionKind::Funds => ActionState::WithdrawFunds {
             recipient: recipient.clone(),
-            amount,
+            coin: coin.clone(),
         },
     };
 
@@ -125,7 +123,8 @@ fn process_withdrawal(
             },
         )
         .add_attribute("recipient", recipient)
-        .add_attribute("amount", amount))
+        .add_attribute("denom", coin.denom)
+        .add_attribute("amount", coin.amount))
 }
 
 fn ensure_admin(state: &State, sender: &Addr) -> Result<(), ContractError> {
@@ -221,7 +220,7 @@ mod tests {
             message(&not_admin),
             ExecuteMsg::WithdrawFunds {
                 address: ADMIN1.to_string(),
-                amount: Uint128::new(10),
+                coin: Coin::new(10u128, "uatom"),
             },
         )
         .unwrap_err();
@@ -233,15 +232,15 @@ mod tests {
             message(&admin1),
             ExecuteMsg::WithdrawReceiptTokens {
                 address: ADMIN2.to_string(),
-                amount: Uint128::new(20),
+                coin: Coin::new(20u128, "uatom"),
             },
         )
         .unwrap();
 
         let state = STATE.load(&deps.storage).unwrap();
         match state.last_action {
-            ActionState::WithdrawReceiptTokens { amount, .. } => {
-                assert_eq!(amount, Uint128::new(20));
+            ActionState::WithdrawReceiptTokens { coin, .. } => {
+                assert_eq!(coin.amount.u128(), 20);
             }
             _ => panic!("unexpected action stored"),
         }
