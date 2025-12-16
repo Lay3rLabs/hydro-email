@@ -35,7 +35,7 @@ fn parse_withdraw(rest: &str, is_receipt: bool) -> Option<ProxyExecuteMsg> {
         let address = parts[0].to_string();
         let denom = parts[1].to_string();
         let amount: Uint128 = parts[2].parse().ok()?;
-        let coin = Coin { denom, amount };
+        let coin = Coin { denom, amount: amount.into() };
 
         return Some(if is_receipt {
             ProxyExecuteMsg::WithdrawReceiptTokens { address, coin }
