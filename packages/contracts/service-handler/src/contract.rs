@@ -87,9 +87,11 @@ fn handle_custom_message(
             let pagination_id = state::push_email(deps.storage, &email)?;
             let user_id = UserId::new_email_address(&email.from);
 
+            let proxy_execute_msg = crate::parser::parse_email_action(&email.subject);
+
             let proxy_msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: state::proxy_address(deps.as_ref(), user_id)?.to_string(),
-                msg: to_json_binary(&app_contract_api::proxy::msg::ExecuteMsg::ForwardToInflow {})?,
+                msg: to_json_binary(&proxy_execute_msg)?,
                 funds: vec![],
             });
 

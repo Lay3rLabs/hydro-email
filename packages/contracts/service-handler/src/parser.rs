@@ -1,0 +1,114 @@
+use app_contract_api::proxy::msg::ExecuteMsg as ProxyExecuteMsg;
+use cosmwasm_std::Uint128;
+
+/// Formats:
+/// - "forward" or "deposit" or empty → ForwardToInflow
+/// - "withdraw ADDRESS AMOUNT" → WithdrawFunds
+/// - "withdraw_receipt ADDRESS AMOUNT" → WithdrawReceiptTokens
+pub fn parse_email_action(subject: &str) -> ProxyExecuteMsg {
+    let text = subject.trim().to_lowercase();
+
+    if text.is_empty() || text == "forward" || text == "deposit" {
+        return ProxyExecuteMsg::ForwardToInflow {};
+    }
+
+    // "withdraw ADDRESS AMOUNT"
+    if let Some(rest) = text.strip_prefix("withdraw ") {
+        if let Some(msg) = parse_withdraw(rest, false) {
+            return msg;
+        }
+    }
+
+    // "withdraw_receipt ADDRESS AMOUNT"
+    if let Some(rest) = text.strip_prefix("withdraw_receipt ") {
+        if let Some(msg) = parse_withdraw(rest, true) {
+            return msg;
+        }
+    }
+
+    ProxyExecuteMsg::ForwardToInflow {}
+}
+
+fn parse_withdraw(rest: &str, is_receipt: bool) -> Option<ProxyExecuteMsg> {
+    let parts: Vec<&str> = rest.split_whitespace().collect();
+    if parts.len() >= 2 {
+        let address = parts[0].to_string();
+        let amount: Uint128 = parts[1].parse().ok()?;
+
+        return Some(if is_receipt {
+            ProxyExecuteMsg::WithdrawReceiptTokens { address, amount }
+        } else {
+            ProxyExecuteMsg::WithdrawFunds { address, amount }
+        });
+    }
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_forward_variants() {
+        assert!(matches!(
+            parse_email_action(""),
+            ProxyExecuteMsg::ForwardToInflow {}
+        ));
+        assert!(matches!(
+            parse_email_action("forward"),
+            ProxyExecuteMsg::ForwardToInflow {}
+        ));
+        assert!(matches!(
+            parse_email_action("FORWARD"),
+            ProxyExecuteMsg::ForwardToInflow {}
+        ));
+        assert!(matches!(
+            parse_email_action("deposit"),
+            ProxyExecuteMsg::ForwardToInflow {}
+        ));
+    }
+
+    #[test]
+    fn test_withdraw_funds() {
+        let msg = parse_email_action("withdraw neutron1abc 1000000");
+        match msg {
+            ProxyExecuteMsg::WithdrawFunds { address, amount } => {
+                assert_eq!(address, "neutron1abc");
+                assert_eq!(amount.u128(), 1000000);
+            }
+            _ => panic!("expected WithdrawFunds"),
+        }
+    }
+
+    #[test]
+    fn test_withdraw_receipt() {
+        let msg = parse_email_action("withdraw_receipt neutron1xyz 500000");
+        match msg {
+            ProxyExecuteMsg::WithdrawReceiptTokens { address, amount } => {
+                assert_eq!(address, "neutron1xyz");
+                assert_eq!(amount.u128(), 500000);
+            }
+            _ => panic!("expected WithdrawReceiptTokens"),
+        }
+    }
+
+    #[test]
+    fn test_invalid_falls_back_to_forward() {
+        assert!(matches!(
+            parse_email_action("withdraw"),
+            ProxyExecuteMsg::ForwardToInflow {}
+        ));
+        assert!(matches!(
+            parse_email_action("withdraw addr"),
+            ProxyExecuteMsg::ForwardToInflow {}
+        ));
+        assert!(matches!(
+            parse_email_action("withdraw addr notanumber"),
+            ProxyExecuteMsg::ForwardToInflow {}
+        ));
+        assert!(matches!(
+            parse_email_action("random subject"),
+            ProxyExecuteMsg::ForwardToInflow {}
+        ));
+    }
+}
