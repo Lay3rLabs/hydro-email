@@ -3115,6 +3115,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "interface"
+version = "0.0.1"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+]
+
+[[package]]
 name = "ipnet"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4196,6 +4204,21 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.110",
+]
+
+[[package]]
+name = "proxy"
+version = "0.0.1"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw2",
+ "interface",
+ "schemars 1.1.0",
+ "serde",
+ "test-utils",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -5658,6 +5681,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-utils"
+version = "0.0.1"
+dependencies = [
+ "cosmwasm-std",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6298,6 +6328,8 @@ dependencies = [
  "alloy-transport",
  "alloy-transport-http",
  "alloy-tx-macros",
+ "interface",
+ "proxy",
 ]
 
 [[package]]
