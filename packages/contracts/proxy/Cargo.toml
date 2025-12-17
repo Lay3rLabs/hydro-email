@@ -15,6 +15,7 @@ library = []
 
 [dependencies]
 app-contract-api = { workspace = true }
+hydro-proxy = { workspace = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus = { workspace = true }

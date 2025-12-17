@@ -39,12 +39,12 @@ overflow-checks = true
 
 [workspace.dependencies]
 # Local
-interface = {path = "hydro/packages/interface", features = ["cosmwasm_compat"] }
-proxy = {path = "hydro/contracts/inflow/proxy", features = ["cosmwasm_compat"] }
+hydro-interface = {path = "hydro/packages/interface", package = "interface", features = ["cosmwasm_compat"] }
+hydro-proxy = {path = "hydro/contracts/inflow/proxy", package = "proxy", features = ["cosmwasm_compat"] }
 app-contract-api = { path = "packages/contracts/api" }
 app-contract-service-handler = { path = "packages/contracts/service-handler" }
-app-contract-user-registry = { path = "packages/contracts/user-registry" }
 app-contract-proxy = { path = "packages/contracts/proxy" }
+app-contract-user-registry = { path = "packages/contracts/user-registry" }
 app-utils = { path = "packages/utils" }
 app-client = { path = "packages/client" }
 app-tests-common = { path = "packages/tests/common" }

@@ -13,6 +13,7 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub struct InstantiateMsg {
     pub admins: Vec<String>,
+    pub control_centers: Vec<String>,
 }
 
 #[cw_serde]

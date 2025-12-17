@@ -1,5 +1,5 @@
-use app_contract_api::proxy::msg::ExecuteMsg as ProxyExecuteMsg;
 use cosmwasm_std::{Coin, Uint128};
+use hydro_proxy::msg::ExecuteMsg as ProxyExecuteMsg;
 
 /// Formats:
 /// - "forward" or "deposit" or empty → ForwardToInflow

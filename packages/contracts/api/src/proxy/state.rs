@@ -18,7 +18,7 @@ pub enum ActionState {
 }
 
 #[cw_serde]
+#[derive(Default)]
 pub struct State {
-    pub admins: Vec<Addr>,
     pub last_action: ActionState,
 }

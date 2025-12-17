@@ -40,7 +40,7 @@ impl CliContext {
             CliCommand::OperatorDeleteService { args, .. } => args,
             CliCommand::OperatorSetSigningKey { args, .. } => args,
             CliCommand::QueryServiceHandlerEmails { args, .. } => args,
-            CliCommand::QueryProxyState { args, .. } => args,
+            CliCommand::QueryProxyConfig { args, .. } => args,
             CliCommand::ContractRegisterUser { args, .. } => args,
         }
     }

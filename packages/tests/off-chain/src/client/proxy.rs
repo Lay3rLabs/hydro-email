@@ -40,6 +40,7 @@ impl ProxyClient {
 
         let msg = app_contract_api::proxy::msg::InstantiateMsg {
             admins: admins.into_iter().map(|x| x.to_string()).collect(),
+            control_centers: vec![], // TODO: implement control_centers integration
         };
 
         let address = app_client.with_app_mut(|app| {

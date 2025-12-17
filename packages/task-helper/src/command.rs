@@ -195,7 +195,7 @@ pub enum CliCommand {
         #[clap(flatten)]
         args: CliArgs,
     },
-    QueryProxyState {
+    QueryProxyConfig {
         /// The address of the service handler contract
         #[arg(long)]
         address: String,

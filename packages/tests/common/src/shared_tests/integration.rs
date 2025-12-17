@@ -74,7 +74,6 @@ pub async fn test_integration(
     assert_eq!(
         state,
         State {
-            admins: vec![cosmwasm_std::Addr::from(service_handler.address)],
             last_action: ActionState::Idle
         }
     );

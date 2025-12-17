@@ -256,7 +256,10 @@ async fn main() {
         } => {
             let client = ctx.signing_client().await.unwrap();
 
-            let instantiate_msg = app_contract_api::proxy::msg::InstantiateMsg { admins };
+            let instantiate_msg = app_contract_api::proxy::msg::InstantiateMsg {
+                admins,
+                control_centers: vec![], // TODO: implement control_centers integration
+            };
 
             let (contract_addr, tx_resp) = client
                 .contract_instantiate(None, code_id, "Proxy", &instantiate_msg, vec![], None)
@@ -618,13 +621,13 @@ async fn main() {
 
             println!("{} emails", emails.len());
         }
-        CliCommand::QueryProxyState { address, args: _ } => {
+        CliCommand::QueryProxyConfig { address, args: _ } => {
             let address = ctx.parse_address(&address).await.unwrap();
             let client = ctx.proxy_querier(address).await.unwrap();
 
-            let state = client.state().await.unwrap();
+            let config = client.config().await.unwrap();
 
-            println!("{:#?}\n", state);
+            println!("{:#?}\n", config);
         }
         CliCommand::ContractRegisterUser {
             email_address,

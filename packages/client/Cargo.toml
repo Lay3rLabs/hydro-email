@@ -23,7 +23,8 @@ reqwest = ["dep:reqwest"]
 wstd = ["dep:wstd"]
 
 [dependencies]
-app-contract-api = { workspace = true}
+app-contract-api = { workspace = true }
+hydro-proxy = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 cosmwasm-std = { workspace = true }

@@ -32,6 +32,7 @@ impl ProxyClient {
                 Some(admins) => admins.iter().map(|a| a.to_string()).collect(),
                 None => vec![client.addr.to_string()],
             },
+            control_centers: vec![], // TODO: implement control_centers integration
         };
 
         let (address, _) = client
