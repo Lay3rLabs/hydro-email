@@ -150,7 +150,7 @@ mod tests {
     use super::*;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        Addr, MessageInfo,
+        Addr, MessageInfo, Uint256,
     };
 
     const CREATOR: &str = "cosmwasm1wtqa75mkgwgncx8v4dep5aygmnq7gspaufggc5ev3u68et43qxmsqy5haw";
@@ -240,7 +240,7 @@ mod tests {
         let state = STATE.load(&deps.storage).unwrap();
         match state.last_action {
             ActionState::WithdrawReceiptTokens { coin, .. } => {
-                assert_eq!(coin.amount.u128(), 20);
+                assert_eq!(coin.amount, Uint256::from(20u128));
             }
             _ => panic!("unexpected action stored"),
         }

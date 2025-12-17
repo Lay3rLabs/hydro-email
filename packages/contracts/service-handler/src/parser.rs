@@ -52,6 +52,7 @@ fn parse_withdraw(rest: &str, is_receipt: bool) -> Option<ProxyExecuteMsg> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cosmwasm_std::Uint256;
 
     #[test]
     fn test_forward_variants() {
@@ -80,7 +81,7 @@ mod tests {
             ProxyExecuteMsg::WithdrawFunds { address, coin } => {
                 assert_eq!(address, "neutron1abc");
                 assert_eq!(coin.denom, "uatom");
-                assert_eq!(coin.amount.u128(), 1000000);
+                assert_eq!(coin.amount, Uint256::from(1000000u128));
             }
             _ => panic!("expected WithdrawFunds"),
         }
@@ -93,7 +94,7 @@ mod tests {
             ProxyExecuteMsg::WithdrawReceiptTokens { address, coin } => {
                 assert_eq!(address, "neutron1xyz");
                 assert_eq!(coin.denom, "factory/vault/share");
-                assert_eq!(coin.amount.u128(), 500000);
+                assert_eq!(coin.amount, Uint256::from(500000u128));
             }
             _ => panic!("expected WithdrawReceiptTokens"),
         }
