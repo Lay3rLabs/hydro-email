@@ -3,6 +3,7 @@ use cosmwasm_std::Addr;
 use cw_multi_test::{ContractWrapper, Executor};
 
 use crate::client::AppClient;
+use crate::mocks;
 
 #[derive(Clone)]
 pub struct ProxyClient {
@@ -38,9 +39,62 @@ impl ProxyClient {
             admins
         };
 
+        // Set up mock control center and vault for hydro proxy
+        let control_center_addr = app_client.with_app_mut(|app| {
+            // Store mock vault code
+            let vault_code_id = app.store_code(mocks::vault::contract());
+
+            // Store mock control center code
+            let control_center_code_id = app.store_code(mocks::control_center::contract());
+
+            // Instantiate mock control center first (vault needs it)
+            let control_center_addr = app
+                .instantiate_contract(
+                    control_center_code_id,
+                    app.api().addr_make("admin"),
+                    &mocks::control_center::InstantiateMsg { subvaults: vec![] },
+                    &[],
+                    "control_center",
+                    None,
+                )
+                .unwrap();
+
+            // Instantiate mock vault
+            let vault_addr = app
+                .instantiate_contract(
+                    vault_code_id,
+                    app.api().addr_make("admin"),
+                    &mocks::vault::InstantiateMsg {
+                        deposit_denom: "utoken".to_string(),
+                        vault_shares_denom: "factory/vault/utoken".to_string(),
+                        control_center_contract: control_center_addr.to_string(),
+                    },
+                    &[],
+                    "vault",
+                    None,
+                )
+                .unwrap();
+
+            // Re-instantiate control center with vault as subvault
+            let control_center_addr = app
+                .instantiate_contract(
+                    control_center_code_id,
+                    app.api().addr_make("admin"),
+                    &mocks::control_center::InstantiateMsg {
+                        subvaults: vec![vault_addr.to_string()],
+                    },
+                    &[],
+                    "control_center_with_vault",
+                    None,
+                )
+                .unwrap();
+
+            control_center_addr
+        });
+
         let msg = app_contract_api::proxy::msg::InstantiateMsg {
             admins: admins.into_iter().map(|x| x.to_string()).collect(),
-            control_centers: vec![], // TODO: implement control_centers integration
+            control_centers: vec![control_center_addr.to_string()],
         };
 
         let address = app_client.with_app_mut(|app| {
