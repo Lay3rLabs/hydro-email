@@ -1,5 +1,5 @@
 use app_contract_api::proxy::{
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg, StateResponse},
+    msg::{QueryMsg, StateResponse},
     state::{ActionState, State},
 };
 use cosmwasm_std::{
@@ -7,6 +7,7 @@ use cosmwasm_std::{
     StdResult,
 };
 use cw2::set_contract_version;
+use hydro_proxy::msg::{ExecuteMsg, InstantiateMsg};
 
 use crate::{error::ContractError, state::STATE};
 
@@ -25,11 +26,7 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // Initialize hydro proxy's config
-    let hydro_msg = hydro_proxy::msg::InstantiateMsg {
-        admins: msg.admins,
-        control_centers: msg.control_centers,
-    };
-    hydro_proxy::contract::instantiate(deps, env, info, hydro_msg)?;
+    hydro_proxy::contract::instantiate(deps, env, info, msg)?;
 
     Ok(Response::new().add_attribute("action", "instantiate_proxy"))
 }
@@ -59,18 +56,8 @@ pub fn execute(
         Ok(state)
     })?;
 
-    // Convert to hydro proxy message and execute
-    let hydro_msg = match msg {
-        ExecuteMsg::ForwardToInflow {} => hydro_proxy::msg::ExecuteMsg::ForwardToInflow {},
-        ExecuteMsg::WithdrawReceiptTokens { address, coin } => {
-            hydro_proxy::msg::ExecuteMsg::WithdrawReceiptTokens { address, coin }
-        }
-        ExecuteMsg::WithdrawFunds { address, coin } => {
-            hydro_proxy::msg::ExecuteMsg::WithdrawFunds { address, coin }
-        }
-    };
-
-    let response = hydro_proxy::contract::execute(deps, env, info, hydro_msg)?;
+    // Execute hydro proxy
+    let response = hydro_proxy::contract::execute(deps, env, info, msg)?;
     Ok(response)
 }
 

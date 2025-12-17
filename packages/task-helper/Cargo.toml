@@ -10,6 +10,7 @@ repository.workspace = true
 app-contract-api = { workspace = true }
 app-utils = { workspace = true }
 app-client = { workspace = true, features = ["binary"] }
+hydro-proxy = { workspace = true }
 tokio = {workspace = true}
 clap = {workspace = true}
 dotenvy = {workspace = true}

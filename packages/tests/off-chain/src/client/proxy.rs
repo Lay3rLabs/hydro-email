@@ -92,7 +92,7 @@ impl ProxyClient {
             control_center_addr
         });
 
-        let msg = app_contract_api::proxy::msg::InstantiateMsg {
+        let msg = hydro_proxy::msg::InstantiateMsg {
             admins: admins.into_iter().map(|x| x.to_string()).collect(),
             control_centers: vec![control_center_addr.to_string()],
         };

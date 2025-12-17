@@ -256,7 +256,7 @@ async fn main() {
         } => {
             let client = ctx.signing_client().await.unwrap();
 
-            let instantiate_msg = app_contract_api::proxy::msg::InstantiateMsg {
+            let instantiate_msg = hydro_proxy::msg::InstantiateMsg {
                 admins,
                 control_centers: vec![], // TODO: implement control_centers integration
             };
