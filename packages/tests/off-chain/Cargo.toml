@@ -14,7 +14,6 @@ app-client = { workspace = true, features = ["multitest"] }
 app-utils = { workspace = true }
 app-contract-service-handler = { workspace = true}
 app-contract-user-registry = { workspace = true}
-app-contract-proxy = { workspace = true }
 app-contract-api= { workspace = true}
 hydro-interface = { workspace = true }
 hydro-proxy = { workspace = true }

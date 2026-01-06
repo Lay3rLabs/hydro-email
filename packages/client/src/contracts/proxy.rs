@@ -11,11 +11,10 @@ use crate::{
     querier::AnyQuerier,
 };
 
-use app_contract_api::proxy::{
-    msg::{QueryMsg as LocalQueryMsg, StateResponse},
+use hydro_proxy::{
+    msg::{ConfigResponse, ExecuteMsg, QueryMsg, StateResponse},
     state::State,
 };
-use hydro_proxy::msg::{ConfigResponse, ExecuteMsg, QueryMsg};
 
 #[derive(Clone)]
 pub struct ProxyContract {
@@ -56,10 +55,7 @@ impl ProxyQuerier {
     }
 
     pub async fn state(&self) -> Result<State> {
-        let resp: StateResponse = self
-            .inner
-            .contract_query(&self.addr, &LocalQueryMsg::State {})
-            .await?;
+        let resp: StateResponse = self.query(&QueryMsg::State {}).await?;
         Ok(resp.state)
     }
 }

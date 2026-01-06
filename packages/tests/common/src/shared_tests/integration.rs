@@ -2,10 +2,8 @@ use app_client::contracts::{
     proxy::ProxyContract, service_handler::ServiceHandlerContract,
     user_registry::UserRegistryContract,
 };
-use app_contract_api::{
-    proxy::state::{ActionState, State},
-    service_handler::msg::Email,
-};
+use app_contract_api::service_handler::msg::Email;
+use hydro_proxy::state::{ActionState, State};
 
 pub async fn test_integration(
     service_handler: impl Into<ServiceHandlerContract>,

@@ -13,7 +13,6 @@ app-tests-common = { workspace = true }
 app-client = { workspace = true, features = ["binary"] }
 app-utils = { workspace = true }
 app-contract-service-handler = { workspace = true}
-app-contract-proxy = { workspace = true }
 app-contract-api= { workspace = true}
 hydro-proxy = { workspace = true }
 wavs-types = { workspace = true }

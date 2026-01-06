@@ -25,10 +25,11 @@ impl From<ProxyClient> for ProxyContract {
 impl ProxyClient {
     pub fn code_id(app_client: &AppClient) -> u64 {
         let contract = ContractWrapper::new(
-            app_contract_proxy::execute,
-            app_contract_proxy::instantiate,
-            app_contract_proxy::query,
-        );
+            hydro_proxy::contract::execute,
+            hydro_proxy::contract::instantiate,
+            hydro_proxy::contract::query,
+        )
+        .with_reply(hydro_proxy::contract::reply);
         app_client.with_app_mut(|app| app.store_code(Box::new(contract)))
     }
 
