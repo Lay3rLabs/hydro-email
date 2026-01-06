@@ -23,7 +23,7 @@ vars:
   COMPONENT_PREFIX: "app-component"
 
   # Contracts
-  ALL_CONTRACTS: ["service-handler", "proxy", "user-registry"]
+  ALL_CONTRACTS: ["service-handler", "user-registry"]
   CONTRACT_PREFIX: "app-contract"
   CW_OPTIMIZER_CACHE: "hydro-email"
 
