@@ -5,7 +5,8 @@ use layer_climb::prelude::*;
 
 use crate::code_ids::CodeId;
 
-// Local InstantiateMsg since the hydro control-center msg.rs is not exposed via interface
+// from hydro/contracts/inflow/control-center/src/msg.rs
+// importing directly would bring in neutron-sdk dependencies
 #[cosmwasm_schema::cw_serde]
 pub struct InstantiateMsg {
     pub deposit_cap: Uint128,
@@ -51,7 +52,7 @@ impl ControlCenterClient {
         };
 
         client
-            .contract_execute(&self.address, &msg, vec![])
+            .contract_execute(&self.address, &msg, vec![], None)
             .await
             .unwrap();
     }
