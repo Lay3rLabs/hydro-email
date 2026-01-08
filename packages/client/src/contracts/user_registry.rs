@@ -78,7 +78,7 @@ impl UserRegistryExecutor {
         email: &str,
         proxy_address: AnyAddr,
     ) -> Result<(AnyTxResponse, UserId)> {
-        let user_id = UserId::new_email_address(&email);
+        let user_id = UserId::new_email_address(email);
 
         let msg = ExecuteMsg::RegisterUser {
             user_id: user_id.clone(),

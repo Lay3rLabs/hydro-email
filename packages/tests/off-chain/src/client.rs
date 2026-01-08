@@ -45,7 +45,7 @@ impl AppClient {
     }
 
     pub fn with_app_mut<T>(&self, f: impl FnOnce(&mut App) -> T) -> T {
-        f(&mut *self.inner.borrow_mut())
+        f(&mut self.inner.borrow_mut())
     }
 
     pub fn clone_app(&self) -> Rc<RefCell<App>> {

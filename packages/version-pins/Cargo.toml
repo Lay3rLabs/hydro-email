@@ -24,7 +24,5 @@ alloy-rpc-client = { workspace = true }
 alloy-signer = { workspace = true }
 alloy-transport = { workspace = true }
 alloy-transport-http = { workspace = true }
-# Explicitly enable cosmwasm_compat for hydro crates when building from root
-# This ensures feature unification enables the feature across the workspace
 hydro-interface = { workspace = true }
 hydro-proxy = { workspace = true }

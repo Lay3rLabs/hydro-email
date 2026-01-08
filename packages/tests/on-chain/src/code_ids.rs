@@ -79,9 +79,14 @@ async fn upload(wasm_path: impl AsRef<Path>) -> u64 {
     let pool = TestPool::get().await;
     let client = pool.pool.get().await.unwrap();
 
+    // Use explicit gas to bypass a simulation's error which fails on Neutron with
+    // "serde parse error: missing field `id`" for vault contract
+    let mut tx_builder = client.tx_builder();
+    tx_builder.set_gas_units_or_simulate(Some(50_000_000));
+
     debug!("Uploading contract to chain");
     let code_id = client
-        .contract_upload_file(wasm_bytes, None)
+        .contract_upload_file(wasm_bytes, Some(tx_builder))
         .await
         .unwrap()
         .0;
