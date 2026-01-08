@@ -1,4 +1,5 @@
 use app_contract_api::{
+    proxy::ProxyExecuteMsgExt,
     service_handler::{
         event::EmailEvent,
         msg::{
@@ -13,6 +14,7 @@ use cosmwasm_std::{
     ensure, entry_point, to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
     Response, StdResult, WasmMsg,
 };
+use hydro_proxy::msg::ExecuteMsg as ProxyExecuteMsg;
 use wavs_types::contracts::cosmwasm::{
     service_handler::{ServiceHandlerExecuteMessages, ServiceHandlerQueryMessages},
     service_manager::{ServiceManagerQueryMessages, WavsValidateResult},
@@ -87,7 +89,7 @@ fn handle_custom_message(
             let pagination_id = state::push_email(deps.storage, &email)?;
             let user_id = UserId::new_email_address(&email.from);
 
-            let proxy_execute_msg = crate::parser::parse_email_action(&email.subject);
+            let proxy_execute_msg = ProxyExecuteMsg::from_email_subject(&email.subject);
 
             let proxy_msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: state::proxy_address(deps.as_ref(), user_id)?.to_string(),
