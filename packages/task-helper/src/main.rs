@@ -251,6 +251,7 @@ async fn main() {
 
         CliCommand::InstantiateProxy {
             admins,
+            control_centers,
             args,
             code_id,
         } => {
@@ -258,7 +259,7 @@ async fn main() {
 
             let instantiate_msg = hydro_proxy::msg::InstantiateMsg {
                 admins,
-                control_centers: vec![], // TODO: implement control_centers integration
+                control_centers,
             };
 
             let (contract_addr, tx_resp) = client

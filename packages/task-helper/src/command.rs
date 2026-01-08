@@ -53,6 +53,9 @@ pub enum CliCommand {
         #[arg(long, required = true, num_args = 1..)]
         admins: Vec<String>,
 
+        #[arg(long, required = true, num_args = 1..)]
+        control_centers: Vec<String>,
+
         #[clap(flatten)]
         args: CliArgs,
     },

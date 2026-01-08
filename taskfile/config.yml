@@ -64,6 +64,8 @@ vars:
     sh: grep '^DEPLOY_WAVS_TARGET=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
   DEPLOY_IPFS_TARGET:
     sh: grep '^DEPLOY_IPFS_TARGET=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
+  DEPLOY_CONTROL_CENTER_ADDRESS:
+    sh: grep '^DEPLOY_CONTROL_CENTER_ADDRESS=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
 
   CHAIN_KEY:
     sh: |
