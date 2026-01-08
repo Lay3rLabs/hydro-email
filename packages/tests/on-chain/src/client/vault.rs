@@ -1,4 +1,5 @@
 use app_client::executor::SigningClientWrapper;
+use hydro_interface::inflow::{ConfigResponse, QueryMsg};
 use layer_climb::prelude::*;
 
 use crate::code_ids::CodeId;
@@ -30,6 +31,7 @@ pub struct DenomMetadata {
 #[derive(Clone)]
 pub struct VaultClient {
     pub address: Address,
+    pub querier: QueryClient,
 }
 
 impl VaultClient {
@@ -59,11 +61,24 @@ impl VaultClient {
             max_withdrawals_per_user: 10,
         };
 
+        let querier = client.querier.clone();
+
         let (address, _) = client
             .contract_instantiate(None, CodeId::new_vault().await, "Vault", &msg, vec![], None)
             .await
             .unwrap();
 
-        Self { address }
+        Self { address, querier }
+    }
+
+    pub async fn config(&self) -> ConfigResponse {
+        self.querier
+            .contract_smart(&self.address, &QueryMsg::Config {})
+            .await
+            .unwrap()
+    }
+
+    pub async fn shares_denom(&self) -> String {
+        self.config().await.config.vault_shares_denom
     }
 }
