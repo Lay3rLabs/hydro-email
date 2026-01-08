@@ -1,32 +1,9 @@
 use app_client::executor::SigningClientWrapper;
+use app_contract_api::vault::{DenomMetadata, InstantiateMsg};
 use hydro_interface::inflow::{ConfigResponse, QueryMsg};
 use layer_climb::prelude::*;
 
 use crate::code_ids::CodeId;
-
-// from hydro/contracts/inflow/vault/src/msg.rs
-// importing directly would bring in neutron-sdk dependencies
-#[cosmwasm_schema::cw_serde]
-pub struct InstantiateMsg {
-    pub deposit_denom: String,
-    pub subdenom: String,
-    pub token_metadata: DenomMetadata,
-    pub control_center_contract: String,
-    pub token_info_provider_contract: Option<String>,
-    pub whitelist: Vec<String>,
-    pub max_withdrawals_per_user: u64,
-}
-
-#[cosmwasm_schema::cw_serde]
-pub struct DenomMetadata {
-    pub exponent: u32,
-    pub display: String,
-    pub name: String,
-    pub description: String,
-    pub symbol: String,
-    pub uri: Option<String>,
-    pub uri_hash: Option<String>,
-}
 
 #[derive(Clone)]
 pub struct VaultClient {

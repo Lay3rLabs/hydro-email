@@ -53,7 +53,11 @@ impl ProxyClient {
                 .instantiate_contract(
                     control_center_code_id,
                     app.api().addr_make("admin"),
-                    &mocks::control_center::InstantiateMsg { subvaults: vec![] },
+                    &mocks::control_center::InstantiateMsg {
+                        deposit_cap: cosmwasm_std::Uint128::new(1_000_000_000_000),
+                        whitelist: vec![],
+                        subvaults: vec![],
+                    },
                     &[],
                     "control_center",
                     None,
@@ -67,8 +71,20 @@ impl ProxyClient {
                     app.api().addr_make("admin"),
                     &mocks::vault::InstantiateMsg {
                         deposit_denom: "utoken".to_string(),
-                        vault_shares_denom: "factory/vault/utoken".to_string(),
+                        subdenom: "utoken".to_string(),
+                        token_metadata: mocks::vault::DenomMetadata {
+                            exponent: 6,
+                            display: "utoken".to_string(),
+                            name: "utoken".to_string(),
+                            description: "utoken".to_string(),
+                            symbol: "UTOKEN".to_string(),
+                            uri: None,
+                            uri_hash: None,
+                        },
                         control_center_contract: control_center_addr.to_string(),
+                        token_info_provider_contract: None,
+                        whitelist: vec![],
+                        max_withdrawals_per_user: 10,
                     },
                     &[],
                     "vault",
@@ -82,6 +98,8 @@ impl ProxyClient {
                     control_center_code_id,
                     app.api().addr_make("admin"),
                     &mocks::control_center::InstantiateMsg {
+                        deposit_cap: cosmwasm_std::Uint128::new(1_000_000_000_000),
+                        whitelist: vec![],
                         subvaults: vec![vault_addr.to_string()],
                     },
                     &[],

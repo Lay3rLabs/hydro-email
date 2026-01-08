@@ -1,4 +1,5 @@
 //! Mock control center contract for testing
+pub use app_contract_api::control_center::InstantiateMsg;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError,
     StdResult,
@@ -8,12 +9,6 @@ use cw_storage_plus::Item;
 use hydro_interface::inflow_control_center::{QueryMsg, SubvaultsResponse};
 
 const SUBVAULTS: Item<Vec<Addr>> = Item::new("subvaults");
-
-/// Simplified instantiate message for testing
-#[cosmwasm_schema::cw_serde]
-pub struct InstantiateMsg {
-    pub subvaults: Vec<String>,
-}
 
 fn instantiate(
     deps: DepsMut,

@@ -1,18 +1,10 @@
 use app_client::executor::SigningClientWrapper;
+use app_contract_api::control_center::InstantiateMsg;
 use cosmwasm_std::Uint128;
 use hydro_interface::inflow_control_center::ExecuteMsg;
 use layer_climb::prelude::*;
 
 use crate::code_ids::CodeId;
-
-// from hydro/contracts/inflow/control-center/src/msg.rs
-// importing directly would bring in neutron-sdk dependencies
-#[cosmwasm_schema::cw_serde]
-pub struct InstantiateMsg {
-    pub deposit_cap: Uint128,
-    pub whitelist: Vec<String>,
-    pub subvaults: Vec<String>,
-}
 
 #[derive(Clone)]
 pub struct ControlCenterClient {
