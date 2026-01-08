@@ -7,6 +7,8 @@ use crate::client::TestPool;
 static SERVICE_HANDLER_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
 static PROXY_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
 static USER_REGISTRY_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
+static CONTROL_CENTER_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
+static VAULT_CODE_ID: tokio::sync::OnceCell<u64> = tokio::sync::OnceCell::const_new();
 
 pub struct CodeId {}
 
@@ -29,6 +31,18 @@ impl CodeId {
             .get_or_init(upload_user_registry)
             .await
     }
+
+    #[instrument]
+    pub async fn new_control_center() -> u64 {
+        *CONTROL_CENTER_CODE_ID
+            .get_or_init(upload_control_center)
+            .await
+    }
+
+    #[instrument]
+    pub async fn new_vault() -> u64 {
+        *VAULT_CODE_ID.get_or_init(upload_vault).await
+    }
 }
 
 async fn upload_service_handler() -> u64 {
@@ -41,6 +55,14 @@ async fn upload_proxy() -> u64 {
 
 async fn upload_user_registry() -> u64 {
     upload(wasm_path("user-registry")).await
+}
+
+async fn upload_control_center() -> u64 {
+    upload(hydro_wasm_path("control_center")).await
+}
+
+async fn upload_vault() -> u64 {
+    upload(hydro_wasm_path("vault")).await
 }
 
 #[instrument(skip(wasm_path), fields(path = %wasm_path.as_ref().display()))]
@@ -76,4 +98,13 @@ fn wasm_path(contract: &str) -> PathBuf {
         .join(".builds")
         .join("contracts")
         .join(format!("app_contract_{contract}.wasm"))
+}
+
+// ./hydro/artifacts/*.wasm
+fn hydro_wasm_path(contract: &str) -> PathBuf {
+    repo_root()
+        .unwrap()
+        .join("hydro")
+        .join("artifacts")
+        .join(format!("{contract}.wasm"))
 }
