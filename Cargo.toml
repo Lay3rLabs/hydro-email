@@ -2,7 +2,6 @@
 members = [
     "packages/contracts/api",
     "packages/contracts/service-handler",
-    "packages/contracts/proxy",
     "packages/contracts/user-registry",
     "packages/components/operator/email-reader",
     "packages/components/aggregator/submitter",
@@ -39,10 +38,11 @@ overflow-checks = true
 
 [workspace.dependencies]
 # Local
+hydro-interface = {path = "hydro/packages/interface", package = "interface", features = ["cosmwasm_compat"] }
+hydro-proxy = {path = "hydro/contracts/inflow/proxy", package = "proxy", features = ["cosmwasm_compat"] }
 app-contract-api = { path = "packages/contracts/api" }
 app-contract-service-handler = { path = "packages/contracts/service-handler" }
 app-contract-user-registry = { path = "packages/contracts/user-registry" }
-app-contract-proxy = { path = "packages/contracts/proxy" }
 app-utils = { path = "packages/utils" }
 app-client = { path = "packages/client" }
 app-tests-common = { path = "packages/tests/common" }

@@ -1,0 +1,3 @@
+[submodule "hydro"]
+	path = hydro
+	url = https://github.com/informalsystems/hydro.git

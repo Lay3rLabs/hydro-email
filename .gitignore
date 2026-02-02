@@ -39,6 +39,7 @@ target
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+
 # general IDE/OS stuff
 *.vim
 *.swo
@@ -46,3 +47,4 @@ target
 .DS_Store
 .vscode
 .claude
+.zed/

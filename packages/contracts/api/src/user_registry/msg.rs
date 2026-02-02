@@ -53,7 +53,7 @@ impl UserId {
 
         let mut hasher = Sha256::new();
         hasher.update(&email);
-        hasher.update(&Self::SALT);
+        hasher.update(Self::SALT);
 
         Self(const_hex::encode(hasher.finalize()))
     }
@@ -62,7 +62,7 @@ impl UserId {
 fn extract_email(input: &str) -> Option<String> {
     let parsed = mailparse::addrparse(input).ok()?;
     // addrparse returns a vector; usually you want the first entry
-    let addr = parsed.get(0)?;
+    let addr = parsed.first()?;
 
     match addr {
         mailparse::MailAddr::Single(single) => Some(single.addr.clone()),

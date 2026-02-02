@@ -41,6 +41,7 @@ tasks:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}" | jq -r '.address'
           CODE_ID:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_CODE_ID}}" | jq -r '.code_id'
+          CONTROL_CENTER_ADDRESS: "{{.DEPLOY_CONTROL_CENTER_ADDRESS}}"
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_PROXY_INSTANTIATE}}"
       - task: contract-register-user
       - task: service-upload-and-set-uri
@@ -444,7 +445,7 @@ tasks:
   contract-instantiate-proxy:
     deps: [assert-account-exists]
     requires:
-      vars: [FILENAME, CODE_ID, ADMIN_ADDRESS]
+      vars: [FILENAME, CODE_ID, ADMIN_ADDRESS, CONTROL_CENTER_ADDRESS]
     cmds:
       - echo "Instantiating Proxy contract..."
       - >
@@ -452,6 +453,7 @@ tasks:
         --output-file {{.FILENAME}}
         --code-id {{.CODE_ID}}
         --admins {{.ADMIN_ADDRESS}}
+        --control-centers {{.CONTROL_CENTER_ADDRESS}}
         --chain {{.CHAIN_KEY}}
       - echo "🚀 Instantiated Proxy contract and saved info to {{.FILENAME}}"
 

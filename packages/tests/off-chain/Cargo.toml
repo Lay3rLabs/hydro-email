@@ -14,11 +14,14 @@ app-client = { workspace = true, features = ["multitest"] }
 app-utils = { workspace = true }
 app-contract-service-handler = { workspace = true}
 app-contract-user-registry = { workspace = true}
-app-contract-proxy = { workspace = true}
 app-contract-api= { workspace = true}
+hydro-interface = { workspace = true }
+hydro-proxy = { workspace = true }
 wavs-types = { workspace = true }
 cw-multi-test = { workspace = true }
+cw-storage-plus = { workspace = true }
 cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }

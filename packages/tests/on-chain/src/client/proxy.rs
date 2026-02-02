@@ -26,12 +26,17 @@ impl From<ProxyClient> for ProxyContract {
 // For stable addresses with instantiate2, we need to use the same client
 // so it can't benefit from the pool which is totally fine, ProxyClient will just have that specific wallet throughout
 impl ProxyClient {
-    pub async fn new(client: SigningClientWrapper, admins: Option<Vec<Address>>) -> Self {
-        let msg = app_contract_api::proxy::msg::InstantiateMsg {
+    pub async fn new(
+        client: SigningClientWrapper,
+        admins: Option<Vec<Address>>,
+        control_centers: Vec<Address>,
+    ) -> Self {
+        let msg = hydro_proxy::msg::InstantiateMsg {
             admins: match admins {
                 Some(admins) => admins.iter().map(|a| a.to_string()).collect(),
                 None => vec![client.addr.to_string()],
             },
+            control_centers: control_centers.iter().map(|a| a.to_string()).collect(),
         };
 
         let (address, _) = client

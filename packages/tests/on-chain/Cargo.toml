@@ -14,6 +14,9 @@ app-client = { workspace = true, features = ["binary"] }
 app-utils = { workspace = true }
 app-contract-service-handler = { workspace = true}
 app-contract-api= { workspace = true}
+hydro-proxy = { workspace = true }
+hydro-interface = { workspace = true }
+cosmwasm-schema = { workspace = true }
 wavs-types = { workspace = true }
 cosmwasm-std = { workspace = true }
 tokio = { workspace = true }
