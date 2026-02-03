@@ -25,6 +25,8 @@ services:
         "/wavs-home",
         "--data",
         "/var/${COMPOSE_PROJECT_NAME:-}",
+        "--host",
+        "0.0.0.0",
         "--port",
         "${COMPOSE_PORT_WAVS:-}",
       ]

@@ -27,6 +27,11 @@ gas_denom = "untrn"
 
 [wavs]
 
+[wavs.p2p.remote]
+listen_port = 9000
+bootstrap_nodes = []
+
+
 [cli]
 
 [aggregator]
