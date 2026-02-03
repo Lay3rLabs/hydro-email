@@ -36,7 +36,7 @@ vars:
   SERVICE_CRON_SCHEDULE: "*/10 * * * * * *" # Every 10 seconds
 
   # Docker images
-  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.9{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.11{{if eq .ARCH "arm64"}}-arm64{{end}}'
   DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.14{{if eq .ARCH "arm64"}}-arm64{{end}}'
   DOCKER_IMAGE_COSMWASM_OPTIMIZER: 'cosmwasm/optimizer{{if eq .ARCH "arm64"}}-arm64{{end}}:0.17.0'
   DOCKER_IMAGE_JAEGER: "jaegertracing/jaeger:2.5.0"
@@ -46,7 +46,6 @@ vars:
 
   # Ports
   LOCAL_PORT_WAVS_OPERATOR_BASE: 8123 # Base port for WAVS, subsequent ports will be incremented by 1 for each instance
-  LOCAL_PORT_WAVS_AGGREGATOR: 8200
   LOCAL_PORT_IPFS_API: 8300
   LOCAL_PORT_IPFS_GATEWAY: 8301
   LOCAL_PORT_JAEGER_UI: 16686
@@ -113,23 +112,12 @@ vars:
         exit 1
       fi
 
-  WAVS_AGGREGATOR_URL:
-    sh: |
-      if [ "{{.DEPLOY_WAVS_TARGET}}" = "local" ]; then
-        echo "http://127.0.0.1:{{.LOCAL_PORT_WAVS_AGGREGATOR}}"
-      elif [ "{{.DEPLOY_WAVS_TARGET}}" = "remote" ]; then
-        echo "{{.REMOTE_WAVS_AGGREGATOR_URL}}"
-      else
-        echo "Error: Invalid DEPLOY_WAVS_TARGET '{{.DEPLOY_WAVS_TARGET}}'. Must be one of: local, remote" >&2
-        exit 1
-      fi
-
   ALL_MNEMONICS_TO_FUND:
     [
       "CLI_MNEMONIC",
-      "WAVS_OPERATOR_MNEMONIC_1",
-      "WAVS_OPERATOR_MNEMONIC_2",
-      "WAVS_AGGREGATOR_COSMOS_CREDENTIAL",
+      "WAVS_OPERATOR_SIGNING_MNEMONIC_1",
+      "WAVS_OPERATOR_SIGNING_MNEMONIC_2",
+      "WAVS_AGGREGATOR_COSMOS_CREDENTIAL_1",
     ]
   COMPONENT_WITS_OPERATOR_COMMANDER: ["wavs:operator@2.0.0"]
 

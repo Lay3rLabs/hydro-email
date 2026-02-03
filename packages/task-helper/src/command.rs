@@ -97,9 +97,6 @@ pub enum CliCommand {
         trigger_cron_schedule: String,
 
         #[arg(long)]
-        aggregator_url: Url,
-
-        #[arg(long)]
         ipfs_kind: IpfsKind,
 
         #[arg(long)]
@@ -126,16 +123,6 @@ pub enum CliCommand {
     },
     AssertAccountExists {
         addr: Option<String>,
-        #[clap(flatten)]
-        args: CliArgs,
-    },
-    AggregatorRegisterService {
-        #[arg(long)]
-        service_manager_address: String,
-
-        #[arg(long)]
-        aggregator_url: Url,
-
         #[clap(flatten)]
         args: CliArgs,
     },

@@ -14,7 +14,6 @@ env:
   COMPOSE_PATH_WAVS_HOME: "{{.PATH_WAVS_HOME}}"
   COMPOSE_PORT_IPFS_API: "{{.LOCAL_PORT_IPFS_API}}"
   COMPOSE_PORT_IPFS_GATEWAY: "{{.LOCAL_PORT_IPFS_GATEWAY}}"
-  COMPOSE_PORT_WAVS_AGGREGATOR: "{{.LOCAL_PORT_WAVS_AGGREGATOR}}"
   COMPOSE_PORT_JAEGER_UI: "{{.LOCAL_PORT_JAEGER_UI}}"
   COMPOSE_PORT_PROMETHEUS_UI: "{{.LOCAL_PORT_PROMETHEUS_UI}}"
 
@@ -71,9 +70,8 @@ tasks:
   ###################################################################
 
   start-wavs:
-    desc: "Start WAVS operator instances, aggregator, and telemetry"
+    desc: "Start WAVS operator instances and telemetry"
     preconditions:
-      - test -f "{{.PATH_DOCKER_FILES}}/wavs-aggregator.yml"
       - test -f "{{.PATH_DOCKER_FILES}}/wavs-operator.yml"
       - test -f "{{.PATH_DOCKER_FILES}}/wavs-telemetry.yml"
       - test -f "{{.PATH_DOCKER_FILES}}/wavs-telemetry-prometheus.yml"
@@ -86,10 +84,9 @@ tasks:
           OPERATORS: '{{.OPERATORS | default "1"}}'
 
   stop-wavs:
-    desc: "Stop all WAVS instances, aggregator, and telemetry"
+    desc: "Stop all WAVS instances and telemetry"
     cmds:
       - task: stop-wavs-operators
-      - task: stop-wavs-aggregator
       - task: stop-wavs-telemetry
 
   start-wavs-operator-inner:
@@ -101,29 +98,8 @@ tasks:
       vars: [OPERATORS]
     deps:
       - task: start-wavs-telemetry
-      - task: start-wavs-aggregator
       - for: { var: OPERATORS_RANGE }
         task: start-wavs-operator-{{.ITEM}}
-
-  start-wavs-aggregator:
-    internal: true
-    deps:
-      - task: docker-start-wavs-aggregator
-    cmds:
-      # Wait for WAVS Aggregator to be up and running
-      - |
-        for ((i=0; i<{{.TIMEOUT_HEALTH_CHECK}}; i++)); do
-          if nc -z 127.0.0.1 {{.LOCAL_PORT_WAVS_AGGREGATOR}}; then
-            break
-          fi
-          echo "Waiting for Aggregator to start on port {{.LOCAL_PORT_WAVS_AGGREGATOR}}..."
-          sleep 1
-        done
-        if ! nc -z 127.0.0.1 {{.LOCAL_PORT_WAVS_AGGREGATOR}}; then
-          echo "Aggregator did not start after {{.TIMEOUT_HEALTH_CHECK}} seconds"
-          exit 1
-        fi
-      - echo "Aggregator is up!"
 
   start-wavs-operator-*:
     vars:
@@ -149,17 +125,6 @@ tasks:
       - |
         echo "WAVS #{{.WAVS_INSTANCE}} is up!"
 
-  docker-start-wavs-aggregator:
-    internal: true
-    env:
-      WAVS_AGGREGATOR_COSMOS_CREDENTIAL:
-        sh: task backend:get-wavs-aggregator-cosmos-credential
-      WAVS_LOG_LEVEL: '{{.RUST_LOG | default "info"}}'
-    cmds:
-      - echo "Starting WAVS Aggregator on port {{.LOCAL_PORT_WAVS_AGGREGATOR}}"
-      - |
-        {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/wavs-aggregator.yml" up --force-recreate -d
-
   docker-start-wavs-operator-*:
     internal: true
     vars:
@@ -178,22 +143,16 @@ tasks:
       COMPOSE_PROJECT_NAME: "wavs-operator-{{.WAVS_INSTANCE}}"
       COMPOSE_PORT_WAVS:
         sh: task backend:get-wavs-operator-port-{{.WAVS_INSTANCE}}
-      WAVS_OPERATOR_MNEMONIC:
-        sh: task backend:get-wavs-operator-mnemonic-{{.WAVS_INSTANCE}}
       WAVS_LOG_LEVEL: '{{.RUST_LOG | default "info"}}'
+      WAVS_SIGNING_MNEMONIC:
+        sh: task backend:get-wavs-operator-signing-mnemonic-{{.WAVS_INSTANCE}}
+      WAVS_AGGREGATOR_COSMOS_CREDENTIAL:
+        sh: task backend:get-wavs-aggregator-cosmos-credential-{{.WAVS_INSTANCE}}
     cmds:
       - |
         echo "Starting WAVS #{{.WAVS_INSTANCE}} on port $COMPOSE_PORT_WAVS"
       - |
         {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/wavs-operator.yml" up --force-recreate -d
-
-  stop-wavs-aggregator:
-    internal: true
-    desc: "Stop WAVS aggregator service"
-    cmds:
-      - echo "Stopping WAVS Aggregator"
-      - |
-        {{.DOCKER_SUDO}} docker compose --file "{{.PATH_DOCKER_FILES}}/wavs-aggregator.yml" down --remove-orphans --volumes
 
   stop-wavs-operators:
     desc: "Stop all WAVS operator instances"
@@ -274,6 +233,22 @@ tasks:
           exit 1
         fi
 
+  get-wavs-operator-signing-mnemonic-*:
+    desc: "Get the WAVS cosmos signing mnemonic"
+    vars:
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+      ENV_VAR_NAME: "WAVS_OPERATOR_SIGNING_MNEMONIC_{{.WAVS_INSTANCE}}"
+    cmds:
+      - echo "${{.ENV_VAR_NAME}}"
+
+  get-wavs-aggregator-cosmos-credential-*:
+    desc: "Get the WAVS cosmos credential for the aggregator"
+    vars:
+      WAVS_INSTANCE: "{{index .MATCH 0}}"
+      ENV_VAR_NAME: "WAVS_AGGREGATOR_COSMOS_CREDENTIAL_{{.WAVS_INSTANCE}}"
+    cmds:
+      - echo "${{.ENV_VAR_NAME}}"
+
   get-wavs-operator-port-*:
     desc: "Get the WAVS port for a wavs number"
     vars:
@@ -282,20 +257,6 @@ tasks:
       WAVS_PORT: "{{sub (add .LOCAL_PORT_WAVS_OPERATOR_BASE (atoi .WAVS_INSTANCE)) 1}}"
     cmds:
       - echo "{{.WAVS_PORT}}"
-
-  get-wavs-operator-mnemonic-*:
-    vars:
-      WAVS_INSTANCE: "{{index .MATCH 0}}"
-      ENV_VAR_NAME: "WAVS_OPERATOR_MNEMONIC_{{.WAVS_INSTANCE}}"
-    cmds:
-      - echo "${{.ENV_VAR_NAME}}"
-
-  get-wavs-aggregator-cosmos-credential:
-    desc: "Get the WAVS submission credential for the aggregator"
-    vars:
-      ENV_VAR_NAME: "WAVS_AGGREGATOR_COSMOS_CREDENTIAL"
-    cmds:
-      - echo "${{.ENV_VAR_NAME}}"
 
   start-wavs-telemetry:
     deps: [docker-start-wavs-telemetry]

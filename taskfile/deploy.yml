@@ -15,7 +15,7 @@ tasks:
   ######################## ALL  #####################################
   ###################################################################
 
-  all:
+  artifacts:
     deps: [all-upload-contracts-and-middleware, components-upload-all]
     cmds:
       - task: middleware-instantiate
@@ -35,6 +35,12 @@ tasks:
           CODE_ID:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_CODE_ID}}" | jq -r '.code_id'
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}"
+      - echo ""
+      - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
+      - echo ""
+
+  user:
+    cmds:
       - task: contract-instantiate-proxy
         vars:
           ADMIN_ADDRESS:
@@ -44,13 +50,15 @@ tasks:
           CONTROL_CENTER_ADDRESS: "{{.DEPLOY_CONTROL_CENTER_ADDRESS}}"
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_PROXY_INSTANTIATE}}"
       - task: contract-register-user
+      - echo ""
+      - echo "✅ User Registered!"
+      - echo ""
+
+  service:
+    cmds:
       - task: service-upload-and-set-uri
         vars:
           ACTIVATE: "true"
-      - task: aggregator-register-service
-        vars:
-          ADDR:
-            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
       - task: operator-add-service
         vars:
           ADDR:
@@ -59,6 +67,15 @@ tasks:
         vars:
           WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
           FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_SIGNING_KEY}}"
+      - echo ""
+      - echo "✅ Service Set!"
+      - echo ""
+
+  all:
+    cmds:
+      - task: artifacts
+      - task: user
+      - task: service
       - echo ""
       - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
       - echo ""
@@ -137,7 +154,6 @@ tasks:
         --component-operator-email-reader-cid-file="{{.PATH_COMPONENT_OPERATOR_EMAIL_READER_CID}}"
         --component-aggregator-submitter-cid-file="{{.PATH_COMPONENT_AGGREGATOR_SUBMITTER_CID}}"
         --trigger-cron-schedule="{{.SERVICE_CRON_SCHEDULE}}"
-        --aggregator-url={{.WAVS_AGGREGATOR_URL}}
         --chain={{.CHAIN_KEY}}
         {{ if eq .ACTIVATE "true" }} --activate {{ end }}
       - echo "🚀 Uploaded Service JSON to IPFS and saved info to {{.FILENAME}}"
@@ -353,22 +369,6 @@ tasks:
         --wavs-url {{.WAVS_URL}}
         --service-manager-address "{{.ADDR}}"
         --chain={{.CHAIN_KEY}}
-
-  ###################################################################
-  ################### AGGREGATOR ####################################
-  ###################################################################
-
-  aggregator-register-service:
-    requires:
-      vars: [ADDR]
-    cmds:
-      - echo "Registering service on aggregator..."
-      - >
-        task helper-exec -- aggregator-register-service
-        --aggregator-url {{.WAVS_AGGREGATOR_URL}}
-        --service-manager-address "{{.ADDR}}"
-        --chain={{.CHAIN_KEY}}
-      - echo "🚀 Registered service on aggregator"
 
   ###################################################################
   ######################## CONTRACTS #################################

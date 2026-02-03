@@ -52,8 +52,8 @@ anyhow = "1.0.98"
 thiserror = "2.0.12"
 
 # WAVS
-wavs-wasi-utils = "2.3.0"
-wavs-types = { version = "=2.0.0-rc.8", default-features = false, features = [
+wavs-wasi-utils = "2.6.0"
+wavs-types = { version = "=2.0.0-rc.11", default-features = false, features = [
   "cosmwasm",
 ] }
 

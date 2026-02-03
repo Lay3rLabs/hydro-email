@@ -361,7 +361,6 @@ async fn main() {
             component_aggregator_submitter_cid_file,
             trigger_cron_schedule,
             middleware_instantiation_file,
-            aggregator_url,
             activate,
         } => {
             let output_directory = path_deployments();
@@ -377,7 +376,6 @@ async fn main() {
 
             let ipfs_api_url = strip_trailing_slash(&ipfs_api_url);
             let ipfs_gateway_url = strip_trailing_slash(&ipfs_gateway_url);
-            let aggregator_url = strip_trailing_slash(&aggregator_url);
 
             async fn read_and_decode<T: DeserializeOwned>(path: std::path::PathBuf) -> T {
                 match tokio::fs::read_to_string(&path).await {
@@ -477,7 +475,6 @@ async fn main() {
             };
 
             let submit_chain = Submit::Aggregator {
-                url: aggregator_url.clone(),
                 component: Box::new(aggregator_submitter_component),
                 signature_kind: SignatureKind::evm_default(),
             };
@@ -541,27 +538,6 @@ async fn main() {
 
             println!("\nService URI: {}", uri);
             println!("Service Gateway URL: {}\n", gateway_url);
-        }
-        CliCommand::AggregatorRegisterService {
-            args: _,
-            service_manager_address,
-            aggregator_url,
-        } => {
-            let req = wavs_types::aggregator::RegisterServiceRequest {
-                service_manager: ServiceManager::Cosmos {
-                    chain: ctx.chain_key(),
-                    address: service_manager_address.parse().unwrap(),
-                },
-            };
-
-            reqwest::Client::new()
-                .post(aggregator_url.join("services").unwrap())
-                .json(&req)
-                .send()
-                .await
-                .unwrap()
-                .error_for_status()
-                .unwrap();
         }
 
         CliCommand::OperatorAddService {

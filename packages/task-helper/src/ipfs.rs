@@ -200,8 +200,7 @@ impl IpfsFile {
 
         let last_line = text
             .lines()
-            .filter(|l| !l.trim().is_empty())
-            .next_back()
+            .rfind(|l| !l.trim().is_empty())
             .ok_or_else(|| anyhow::anyhow!("Empty response from IPFS API"))?;
 
         /// Response from the IPFS Kubo API's `/api/v0/add` endpoint.

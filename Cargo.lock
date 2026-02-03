@@ -6537,9 +6537,9 @@ dependencies = [
 
 [[package]]
 name = "wavs-types"
-version = "2.0.0-rc.8"
+version = "2.0.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "218b26a238afd3e8a95f9cd183325f948de2c6f35d0c2b07a1959511af3b8509"
+checksum = "f57d48f762f3034c06ea37c6af53bd4a5a3e9c41eebdaa06b970376b73f92e4c"
 dependencies = [
  "alloy-primitives",
  "alloy-rpc-types-eth",
@@ -6569,9 +6569,9 @@ dependencies = [
 
 [[package]]
 name = "wavs-wasi-utils"
-version = "2.3.0"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4aa582176dfec52b3875f3b0322e0c4cf5e5f01bec2f5822a6447e995812d87a"
+checksum = "9d3c5ae2f3e2b699b1ac4fc8bfc52049390a53c7d83c8bd9fae2ddb5381d8aeb"
 dependencies = [
  "alloy-json-rpc",
  "alloy-primitives",
