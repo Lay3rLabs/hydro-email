@@ -638,6 +638,7 @@ dependencies = [
  "base64 0.22.1",
  "cfdkim",
  "cfg-if",
+ "const-hex",
  "futures",
  "imap",
  "mailparse",

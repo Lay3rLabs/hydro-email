@@ -63,10 +63,10 @@ tasks:
 
   operator:
     cmds:
-      # - task: operator-add-service
-      #   vars:
-      #     ADDR:
-      #       sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
+      - task: operator-add-service
+        vars:
+          ADDR:
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
       - task: middleware-operator-set-signing-key
         vars:
           WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
