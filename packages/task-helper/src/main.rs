@@ -419,7 +419,7 @@ async fn main() {
             let operator_email_reader_component = wavs_types::Component {
                 source: ComponentSource::Download {
                     //uri: component_operator.uri.parse().unwrap(),
-                    uri: component_operator_email_reader.gateway_url.parse().unwrap(),
+                    uri: component_operator_email_reader.uri.parse().unwrap(),
                     digest: component_operator_email_reader.digest,
                 },
                 permissions: wavs_types::Permissions {
@@ -451,7 +451,7 @@ async fn main() {
             let aggregator_submitter_component = wavs_types::Component {
                 source: ComponentSource::Download {
                     //uri: component_aggregator.uri.parse().unwrap(),
-                    uri: component_aggregator_submitter.gateway_url.parse().unwrap(),
+                    uri: component_aggregator_submitter.uri.parse().unwrap(),
                     digest: component_aggregator_submitter.digest,
                 },
                 permissions: wavs_types::Permissions {

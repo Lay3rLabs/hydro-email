@@ -36,8 +36,8 @@ vars:
   SERVICE_CRON_SCHEDULE: "*/10 * * * * * *" # Every 10 seconds
 
   # Docker images
-  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.11{{if eq .ARCH "arm64"}}-arm64{{end}}'
-  DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.14{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.12{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.15{{if eq .ARCH "arm64"}}-arm64{{end}}'
   DOCKER_IMAGE_COSMWASM_OPTIMIZER: 'cosmwasm/optimizer{{if eq .ARCH "arm64"}}-arm64{{end}}:0.17.0'
   DOCKER_IMAGE_JAEGER: "jaegertracing/jaeger:2.5.0"
   DOCKER_IMAGE_PROMETHEUS: "prom/prometheus:v3.3.0"
@@ -64,7 +64,7 @@ vars:
   DEPLOY_IPFS_TARGET:
     sh: grep '^DEPLOY_IPFS_TARGET=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
   DEPLOY_CONTROL_CENTER_ADDRESS:
-    sh: grep '^DEPLOY_CONTROL_CENTER_ADDRESS=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
+    sh: grep '^DEPLOY_CONTROL_CENTER_ADDRESS=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1
 
   CHAIN_KEY:
     sh: |
@@ -123,6 +123,8 @@ vars:
 
   # Middleware
   DEFAULT_MIDDLEWARE_SIGNER_WEIGHT: 100
+  DEFAULT_MIDDLEWARE_QUORUM_NUMERATOR: 200
+  DEFAULT_MIDDLEWARE_QUORUM_DENOMINATOR: 300
 
   # Timeouts
   TIMEOUT_HEALTH_CHECK: 30 # seconds to wait for service health checks

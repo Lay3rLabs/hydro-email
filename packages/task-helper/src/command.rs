@@ -50,10 +50,10 @@ pub enum CliCommand {
         #[arg(long)]
         code_id: u64,
 
-        #[arg(long, required = true, num_args = 1..)]
+        #[arg(long, required = true, num_args = 1.., value_delimiter = ' ')]
         admins: Vec<String>,
 
-        #[arg(long, required = true, num_args = 1..)]
+        #[arg(long, required = true, num_args = 1.., value_delimiter = ' ')]
         control_centers: Vec<String>,
 
         #[clap(flatten)]

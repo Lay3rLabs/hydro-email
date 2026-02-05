@@ -25,6 +25,7 @@ tasks:
           REGISTRY_CODE_ID:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_STAKE_REGISTRY_CODE_ID}}" | jq -r '.code_id'
           FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}"
+      - task: middleware-set-quorum
       - task: contract-instantiate-user-registry
         vars:
           CODE_ID:
@@ -39,7 +40,7 @@ tasks:
       - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
       - echo ""
 
-  user:
+  proxy:
     cmds:
       - task: contract-instantiate-proxy
         vars:
@@ -59,6 +60,12 @@ tasks:
       - task: service-upload-and-set-uri
         vars:
           ACTIVATE: "true"
+      - echo ""
+      - echo "✅ Service Set!"
+      - echo ""
+
+  operator:
+    cmds:
       - task: operator-add-service
         vars:
           ADDR:
@@ -68,14 +75,15 @@ tasks:
           WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
           FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_SIGNING_KEY}}"
       - echo ""
-      - echo "✅ Service Set!"
+      - echo "✅ Operator registered!"
       - echo ""
 
   all:
     cmds:
       - task: artifacts
-      - task: user
+      - task: proxy
       - task: service
+      - task: operator
       - echo ""
       - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
       - echo ""
@@ -129,7 +137,7 @@ tasks:
           ADDR:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
           URI:
-            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.gateway_url'
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.uri'
   service-upload:
     requires:
       vars:
@@ -249,6 +257,29 @@ tasks:
         --output-path "/output/{{.FILENAME}}"
       - echo "🚀 Instantiated middleware contracts and saved info to {{.FILENAME}}"
 
+  middleware-set-quorum:
+    vars:
+      SERVICE_MANAGER_ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}" | jq -r '.service_manager_address'
+      MIDDLEWARE_QUORUM_NUMERATOR: "{{.QUORUM_NUMERATOR | default .DEFAULT_MIDDLEWARE_QUORUM_NUMERATOR}}"
+      MIDDLEWARE_QUORUM_DENOMINATOR: "{{.QUORUM_DENOMINATOR | default .DEFAULT_MIDDLEWARE_QUORUM_DENOMINATOR}}"
+    cmds:
+      - echo "Setting middleware quorum threshold to {{.MIDDLEWARE_QUORUM_NUMERATOR}}/{{.MIDDLEWARE_QUORUM_DENOMINATOR}}..."
+      - >
+        docker run --rm
+        --network host
+        -v "{{.PATH_WAVS_HOME}}":/wavs-home:ro
+        -v "{{.PATH_DEPLOYMENTS}}":/output
+        -e CHAIN_KEY="{{.CHAIN_KEY}}"
+        -e WAVS_HOME="/wavs-home"
+        -e CLI_MNEMONIC="{{.CLI_MNEMONIC}}"
+        {{.DOCKER_IMAGE_WAVS_CW_MIDDLEWARE}}
+        service-manager set-quorum-threshold
+        --address "{{.SERVICE_MANAGER_ADDRESS}}"
+        --numerator "{{.MIDDLEWARE_QUORUM_NUMERATOR}}"
+        --denominator "{{.MIDDLEWARE_QUORUM_DENOMINATOR}}"
+      - echo "✅ Middleware quorum threshold set."
+
   middleware-set-service-uri:
     deps: [assert-account-exists]
     requires:
@@ -294,7 +325,7 @@ tasks:
       FILENAME: '{{trimSuffix ".json" .FILENAME}}-{{.WAVS_INSTANCE}}.json'
       WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
       OPERATOR_MNEMONIC:
-        sh: task backend:get-wavs-operator-mnemonic-{{.WAVS_INSTANCE}}
+        sh: task backend:get-wavs-operator-signing-mnemonic-{{.WAVS_INSTANCE}}
       EVM_OPERATOR_ADDRESS:
         sh: cast wallet address --mnemonic "{{.OPERATOR_MNEMONIC}}"
       SERVICE_MANAGER_ADDRESS:
