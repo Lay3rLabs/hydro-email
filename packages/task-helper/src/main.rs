@@ -606,6 +606,14 @@ async fn main() {
 
             println!("{:#?}\n", config);
         }
+        CliCommand::QueryProxyState { address, args: _ } => {
+            let address = ctx.parse_address(&address).await.unwrap();
+            let client = ctx.proxy_querier(address).await.unwrap();
+
+            let state = client.state().await.unwrap();
+
+            println!("{:#?}\n", state);
+        }
         CliCommand::ContractRegisterUser {
             email_address,
             user_registry_address,

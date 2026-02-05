@@ -134,6 +134,16 @@ tasks:
         --address={{.ADDRESS}}
         --chain={{.CHAIN_KEY}}
 
+  query-proxy-config:
+    vars:
+      ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_INSTANTIATE}}" | jq -r '.address'
+    cmds:
+      - >
+        task helper-exec -- query-proxy-config
+        --address={{.ADDRESS}}
+        --chain={{.CHAIN_KEY}}
+
   ### HELPERS
   basename:
     requires:
