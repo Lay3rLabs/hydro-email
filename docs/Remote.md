@@ -6,8 +6,13 @@ In the `.env`, make sure to set `DEPLOY_*` as needed
 
 ```
 task deploy:artifacts
-task deploy:proxy
 task deploy:service
+```
+
+## For each user (change `DEPLOY_REGISTER_USER_EMAIL` in the `.env`):
+
+```
+task deploy:user
 ```
 
 ## Make sure each backend service is running (per-node)

@@ -36,12 +36,6 @@ tasks:
           CODE_ID:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_CODE_ID}}" | jq -r '.code_id'
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_SERVICE_HANDLER_INSTANTIATE}}"
-      - echo ""
-      - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
-      - echo ""
-
-  proxy:
-    cmds:
       - task: contract-instantiate-proxy
         vars:
           ADMIN_ADDRESS:
@@ -50,10 +44,13 @@ tasks:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_CODE_ID}}" | jq -r '.code_id'
           CONTROL_CENTER_ADDRESS: "{{.DEPLOY_CONTROL_CENTER_ADDRESS}}"
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_PROXY_INSTANTIATE}}"
+      - echo ""
+      - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
+      - echo ""
+
+  user:
+    cmds:
       - task: contract-register-user
-      - echo ""
-      - echo "✅ User Registered!"
-      - echo ""
 
   service:
     cmds:
@@ -66,10 +63,10 @@ tasks:
 
   operator:
     cmds:
-      - task: operator-add-service
-        vars:
-          ADDR:
-            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
+      # - task: operator-add-service
+      #   vars:
+      #     ADDR:
+      #       sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
       - task: middleware-operator-set-signing-key
         vars:
           WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
@@ -81,8 +78,8 @@ tasks:
   all:
     cmds:
       - task: artifacts
-      - task: proxy
       - task: service
+      - task: user
       - task: operator
       - echo ""
       - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
@@ -278,7 +275,7 @@ tasks:
         --address "{{.SERVICE_MANAGER_ADDRESS}}"
         --numerator "{{.MIDDLEWARE_QUORUM_NUMERATOR}}"
         --denominator "{{.MIDDLEWARE_QUORUM_DENOMINATOR}}"
-      - echo "✅ Middleware quorum threshold set."
+      - echo "✅ Middleware quorum threshold set to {{.MIDDLEWARE_QUORUM_NUMERATOR}}/{{.MIDDLEWARE_QUORUM_DENOMINATOR}}."
 
   middleware-set-service-uri:
     deps: [assert-account-exists]
@@ -504,7 +501,7 @@ tasks:
         --user-registry-address {{.USER_REGISTRY_ADDRESS}}
         --proxy-address {{.PROXY_ADDRESS}}
         --chain {{.CHAIN_KEY}}
-      - echo "🚀 Registered user on User Registry contract"
+      - echo "🚀 Registered {{.EMAIL_ADDRESS}} on User Registry contract"
 
   ###################################################################
   ######################## COMPONENTS ###############################

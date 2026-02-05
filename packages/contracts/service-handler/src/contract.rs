@@ -1,5 +1,5 @@
 use app_contract_api::{
-    proxy::ProxyExecuteMsgExt,
+    proxy::ProxyExecuteMsg,
     service_handler::{
         event::EmailEvent,
         msg::{
@@ -14,7 +14,6 @@ use cosmwasm_std::{
     ensure, entry_point, to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
     Response, StdResult, WasmMsg,
 };
-use hydro_proxy::msg::ExecuteMsg as ProxyExecuteMsg;
 use wavs_types::contracts::cosmwasm::{
     service_handler::{ServiceHandlerExecuteMessages, ServiceHandlerQueryMessages},
     service_manager::{ServiceManagerQueryMessages, WavsValidateResult},
