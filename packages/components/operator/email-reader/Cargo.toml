@@ -46,6 +46,7 @@ cfdkim = { workspace = true}
 
 # Hashing
 sha2 = { workspace = true }
+const-hex = { workspace = true }
 
 # Security
 zeroize = { workspace = true }

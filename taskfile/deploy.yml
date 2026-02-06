@@ -15,7 +15,7 @@ tasks:
   ######################## ALL  #####################################
   ###################################################################
 
-  all:
+  artifacts:
     deps: [all-upload-contracts-and-middleware, components-upload-all]
     cmds:
       - task: middleware-instantiate
@@ -25,6 +25,7 @@ tasks:
           REGISTRY_CODE_ID:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_STAKE_REGISTRY_CODE_ID}}" | jq -r '.code_id'
           FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}"
+      - task: middleware-set-quorum
       - task: contract-instantiate-user-registry
         vars:
           CODE_ID:
@@ -43,14 +44,25 @@ tasks:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_CONTRACT_PROXY_CODE_ID}}" | jq -r '.code_id'
           CONTROL_CENTER_ADDRESS: "{{.DEPLOY_CONTROL_CENTER_ADDRESS}}"
           FILENAME: "{{.DEPLOY_FILENAME_CONTRACT_PROXY_INSTANTIATE}}"
+      - echo ""
+      - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
+      - echo ""
+
+  user:
+    cmds:
       - task: contract-register-user
+
+  service:
+    cmds:
       - task: service-upload-and-set-uri
         vars:
           ACTIVATE: "true"
-      - task: aggregator-register-service
-        vars:
-          ADDR:
-            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
+      - echo ""
+      - echo "✅ Service Set!"
+      - echo ""
+
+  operator:
+    cmds:
       - task: operator-add-service
         vars:
           ADDR:
@@ -59,6 +71,16 @@ tasks:
         vars:
           WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
           FILENAME: "{{.DEPLOY_FILENAME_MIDDLEWARE_SIGNING_KEY}}"
+      - echo ""
+      - echo "✅ Operator registered!"
+      - echo ""
+
+  all:
+    cmds:
+      - task: artifacts
+      - task: service
+      - task: user
+      - task: operator
       - echo ""
       - echo "✅ Deployment completed! Artifacts are in {{.PATH_DEPLOYMENTS}}"
       - echo ""
@@ -112,7 +134,7 @@ tasks:
           ADDR:
             sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.service.manager.cosmos.address'
           URI:
-            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.gateway_url'
+            sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_SERVICE_CID}}" | jq -r '.uri'
   service-upload:
     requires:
       vars:
@@ -137,7 +159,6 @@ tasks:
         --component-operator-email-reader-cid-file="{{.PATH_COMPONENT_OPERATOR_EMAIL_READER_CID}}"
         --component-aggregator-submitter-cid-file="{{.PATH_COMPONENT_AGGREGATOR_SUBMITTER_CID}}"
         --trigger-cron-schedule="{{.SERVICE_CRON_SCHEDULE}}"
-        --aggregator-url={{.WAVS_AGGREGATOR_URL}}
         --chain={{.CHAIN_KEY}}
         {{ if eq .ACTIVATE "true" }} --activate {{ end }}
       - echo "🚀 Uploaded Service JSON to IPFS and saved info to {{.FILENAME}}"
@@ -233,6 +254,29 @@ tasks:
         --output-path "/output/{{.FILENAME}}"
       - echo "🚀 Instantiated middleware contracts and saved info to {{.FILENAME}}"
 
+  middleware-set-quorum:
+    vars:
+      SERVICE_MANAGER_ADDRESS:
+        sh: cat "{{.PATH_DEPLOYMENTS}}/{{.DEPLOY_FILENAME_MIDDLEWARE_INSTANTIATE}}" | jq -r '.service_manager_address'
+      MIDDLEWARE_QUORUM_NUMERATOR: "{{.QUORUM_NUMERATOR | default .DEFAULT_MIDDLEWARE_QUORUM_NUMERATOR}}"
+      MIDDLEWARE_QUORUM_DENOMINATOR: "{{.QUORUM_DENOMINATOR | default .DEFAULT_MIDDLEWARE_QUORUM_DENOMINATOR}}"
+    cmds:
+      - echo "Setting middleware quorum threshold to {{.MIDDLEWARE_QUORUM_NUMERATOR}}/{{.MIDDLEWARE_QUORUM_DENOMINATOR}}..."
+      - >
+        docker run --rm
+        --network host
+        -v "{{.PATH_WAVS_HOME}}":/wavs-home:ro
+        -v "{{.PATH_DEPLOYMENTS}}":/output
+        -e CHAIN_KEY="{{.CHAIN_KEY}}"
+        -e WAVS_HOME="/wavs-home"
+        -e CLI_MNEMONIC="{{.CLI_MNEMONIC}}"
+        {{.DOCKER_IMAGE_WAVS_CW_MIDDLEWARE}}
+        service-manager set-quorum-threshold
+        --address "{{.SERVICE_MANAGER_ADDRESS}}"
+        --numerator "{{.MIDDLEWARE_QUORUM_NUMERATOR}}"
+        --denominator "{{.MIDDLEWARE_QUORUM_DENOMINATOR}}"
+      - echo "✅ Middleware quorum threshold set to {{.MIDDLEWARE_QUORUM_NUMERATOR}}/{{.MIDDLEWARE_QUORUM_DENOMINATOR}}."
+
   middleware-set-service-uri:
     deps: [assert-account-exists]
     requires:
@@ -278,7 +322,7 @@ tasks:
       FILENAME: '{{trimSuffix ".json" .FILENAME}}-{{.WAVS_INSTANCE}}.json'
       WEIGHT: "{{.WEIGHT | default .DEFAULT_MIDDLEWARE_SIGNER_WEIGHT}}"
       OPERATOR_MNEMONIC:
-        sh: task backend:get-wavs-operator-mnemonic-{{.WAVS_INSTANCE}}
+        sh: task backend:get-wavs-operator-signing-mnemonic-{{.WAVS_INSTANCE}}
       EVM_OPERATOR_ADDRESS:
         sh: cast wallet address --mnemonic "{{.OPERATOR_MNEMONIC}}"
       SERVICE_MANAGER_ADDRESS:
@@ -321,7 +365,8 @@ tasks:
       WAVS_URL:
         sh: task backend:get-wavs-url-{{.WAVS_INSTANCE}}
     cmds:
-      - echo "Adding service to operator {{.WAVS_INSTANCE}}..."
+      - |
+        echo "Adding service to operator {{.WAVS_INSTANCE}} at endpoint {{.WAVS_URL}}"
       - >
         task helper-exec -- operator-add-service
         --wavs-url {{.WAVS_URL}}
@@ -353,22 +398,6 @@ tasks:
         --wavs-url {{.WAVS_URL}}
         --service-manager-address "{{.ADDR}}"
         --chain={{.CHAIN_KEY}}
-
-  ###################################################################
-  ################### AGGREGATOR ####################################
-  ###################################################################
-
-  aggregator-register-service:
-    requires:
-      vars: [ADDR]
-    cmds:
-      - echo "Registering service on aggregator..."
-      - >
-        task helper-exec -- aggregator-register-service
-        --aggregator-url {{.WAVS_AGGREGATOR_URL}}
-        --service-manager-address "{{.ADDR}}"
-        --chain={{.CHAIN_KEY}}
-      - echo "🚀 Registered service on aggregator"
 
   ###################################################################
   ######################## CONTRACTS #################################
@@ -473,7 +502,7 @@ tasks:
         --user-registry-address {{.USER_REGISTRY_ADDRESS}}
         --proxy-address {{.PROXY_ADDRESS}}
         --chain {{.CHAIN_KEY}}
-      - echo "🚀 Registered user on User Registry contract"
+      - echo "🚀 Registered {{.EMAIL_ADDRESS}} on User Registry contract"
 
   ###################################################################
   ######################## COMPONENTS ###############################

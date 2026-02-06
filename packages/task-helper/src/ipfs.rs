@@ -200,8 +200,7 @@ impl IpfsFile {
 
         let last_line = text
             .lines()
-            .filter(|l| !l.trim().is_empty())
-            .next_back()
+            .rfind(|l| !l.trim().is_empty())
             .ok_or_else(|| anyhow::anyhow!("Empty response from IPFS API"))?;
 
         /// Response from the IPFS Kubo API's `/api/v0/add` endpoint.
@@ -229,13 +228,13 @@ impl IpfsFile {
             // The URI should include the filename as a path
             let root_cid = parsed.hash;
             let uri = format!("ipfs://{}/{}", root_cid, filename);
-            let gateway = format!("{}/ipfs/{}/{}", gateway_base, root_cid, filename);
+            let gateway = format!("{}/{}/{}", gateway_base, root_cid, filename);
             (root_cid, uri, gateway)
         } else {
             // Direct file upload - the CID points directly to the file content
             let cid = parsed.hash;
             let uri = format!("ipfs://{}", cid);
-            let gateway = format!("{}/ipfs/{}", gateway_base, cid);
+            let gateway = format!("{}/{}", gateway_base, cid);
             (cid, uri, gateway)
         };
 

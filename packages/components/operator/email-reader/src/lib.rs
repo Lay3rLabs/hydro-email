@@ -50,20 +50,15 @@ async fn inner(trigger_action: TriggerAction) -> anyhow::Result<Vec<WasmResponse
 
             verify_email(&email).await?;
 
-            // For right now, treat each email as its own event
-            let event_id_salt = {
-                use sha2::{Digest, Sha256};
-
-                let mut hasher = Sha256::new();
-                hasher.update(&email.raw_bytes);
-                hasher.finalize().to_vec()
-            };
+            let event_id_salt = email.event_id_salt();
 
             let email = Email {
                 from: email.original_sender,
                 subject: email.subject.unwrap_or_default(),
             };
+
             println!("Got email: {:#?}", email);
+            println!("Event ID salt: {}", const_hex::encode(&event_id_salt));
 
             return Ok(vec![WasmResponse {
                 payload: CustomExecuteMsg::Email(email)

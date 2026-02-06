@@ -19,7 +19,7 @@ These steps may take a while, but it's only needed the first time you dive into 
 task build-all
 ```
 
-2. Start all backend services
+2. (local-only) Start all backend services
 
 ```bash
 task backend:start-all
@@ -29,7 +29,7 @@ task backend:start-all
 # task backend:start-all OPERATORS=3
 ```
 
-3. Tap the faucet for all the mnemonics
+3. (local-only) Tap the faucet for all the mnemonics
 
 ```bash
 task deploy:tap-faucet-all
@@ -37,6 +37,9 @@ task deploy:tap-faucet-all
 
 4. Deploy everything
 
+See [Remote](./Remote.md) for more details if deploying remotely
+
+Local
 ```bash
 task deploy:all
 
@@ -45,6 +48,7 @@ task deploy:all
 # 
 # task deploy:all SKIP_UPLOAD_CONTRACTS=true SKIP_UPLOAD_COMPONENTS=true SKIP_UPLOAD_MIDDLEWARE=true
 ```
+
 
 5. Send an email to the operator email address
 
@@ -65,7 +69,7 @@ task contracts:query-proxy-state
 task deploy:operator-delete-service
 ```
 
-8. When done, stop all backend services
+8. (local-only) When done, stop all backend services
 
 ```bash
 task backend:stop-all

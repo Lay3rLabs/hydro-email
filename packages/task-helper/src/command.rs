@@ -50,10 +50,10 @@ pub enum CliCommand {
         #[arg(long)]
         code_id: u64,
 
-        #[arg(long, required = true, num_args = 1..)]
+        #[arg(long, required = true, num_args = 1.., value_delimiter = ' ')]
         admins: Vec<String>,
 
-        #[arg(long, required = true, num_args = 1..)]
+        #[arg(long, required = true, num_args = 1.., value_delimiter = ' ')]
         control_centers: Vec<String>,
 
         #[clap(flatten)]
@@ -97,9 +97,6 @@ pub enum CliCommand {
         trigger_cron_schedule: String,
 
         #[arg(long)]
-        aggregator_url: Url,
-
-        #[arg(long)]
         ipfs_kind: IpfsKind,
 
         #[arg(long)]
@@ -126,16 +123,6 @@ pub enum CliCommand {
     },
     AssertAccountExists {
         addr: Option<String>,
-        #[clap(flatten)]
-        args: CliArgs,
-    },
-    AggregatorRegisterService {
-        #[arg(long)]
-        service_manager_address: String,
-
-        #[arg(long)]
-        aggregator_url: Url,
-
         #[clap(flatten)]
         args: CliArgs,
     },
@@ -199,7 +186,15 @@ pub enum CliCommand {
         args: CliArgs,
     },
     QueryProxyConfig {
-        /// The address of the service handler contract
+        /// The address of the proxy contract
+        #[arg(long)]
+        address: String,
+
+        #[clap(flatten)]
+        args: CliArgs,
+    },
+    QueryProxyState {
+        /// The address of the proxy contract
         #[arg(long)]
         address: String,
 

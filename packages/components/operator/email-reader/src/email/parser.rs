@@ -1,8 +1,8 @@
-use std::borrow::Cow;
-
 use anyhow::{Context, Result};
 use imap::{types::Fetch, Session};
 use mailparse::*;
+use sha2::{Digest, Sha256};
+use std::borrow::Cow;
 
 use crate::error::AppResult;
 
@@ -51,6 +51,27 @@ impl EmailMessage {
     /// Parse the raw email bytes and return a ParsedMail
     pub fn get_parsed(&self) -> AppResult<ParsedMail> {
         Ok(parse_mail(&self.raw_bytes)?)
+    }
+
+    pub fn event_id_salt(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.update(&self.original_sender);
+        let mut dkim_signatures = self.dkim_signatures.clone();
+        dkim_signatures.sort();
+
+        for sig in &dkim_signatures {
+            hasher.update(sig);
+        }
+
+        if let Some(subject) = &self.subject {
+            hasher.update(subject);
+        }
+
+        if let Some(body) = &self.body_text {
+            hasher.update(body);
+        }
+
+        hasher.finalize().to_vec()
     }
 }
 

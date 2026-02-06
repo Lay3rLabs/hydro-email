@@ -361,7 +361,6 @@ async fn main() {
             component_aggregator_submitter_cid_file,
             trigger_cron_schedule,
             middleware_instantiation_file,
-            aggregator_url,
             activate,
         } => {
             let output_directory = path_deployments();
@@ -377,7 +376,6 @@ async fn main() {
 
             let ipfs_api_url = strip_trailing_slash(&ipfs_api_url);
             let ipfs_gateway_url = strip_trailing_slash(&ipfs_gateway_url);
-            let aggregator_url = strip_trailing_slash(&aggregator_url);
 
             async fn read_and_decode<T: DeserializeOwned>(path: std::path::PathBuf) -> T {
                 match tokio::fs::read_to_string(&path).await {
@@ -421,7 +419,7 @@ async fn main() {
             let operator_email_reader_component = wavs_types::Component {
                 source: ComponentSource::Download {
                     //uri: component_operator.uri.parse().unwrap(),
-                    uri: component_operator_email_reader.gateway_url.parse().unwrap(),
+                    uri: component_operator_email_reader.uri.parse().unwrap(),
                     digest: component_operator_email_reader.digest,
                 },
                 permissions: wavs_types::Permissions {
@@ -453,7 +451,7 @@ async fn main() {
             let aggregator_submitter_component = wavs_types::Component {
                 source: ComponentSource::Download {
                     //uri: component_aggregator.uri.parse().unwrap(),
-                    uri: component_aggregator_submitter.gateway_url.parse().unwrap(),
+                    uri: component_aggregator_submitter.uri.parse().unwrap(),
                     digest: component_aggregator_submitter.digest,
                 },
                 permissions: wavs_types::Permissions {
@@ -477,7 +475,6 @@ async fn main() {
             };
 
             let submit_chain = Submit::Aggregator {
-                url: aggregator_url.clone(),
                 component: Box::new(aggregator_submitter_component),
                 signature_kind: SignatureKind::evm_default(),
             };
@@ -542,27 +539,6 @@ async fn main() {
             println!("\nService URI: {}", uri);
             println!("Service Gateway URL: {}\n", gateway_url);
         }
-        CliCommand::AggregatorRegisterService {
-            args: _,
-            service_manager_address,
-            aggregator_url,
-        } => {
-            let req = wavs_types::aggregator::RegisterServiceRequest {
-                service_manager: ServiceManager::Cosmos {
-                    chain: ctx.chain_key(),
-                    address: service_manager_address.parse().unwrap(),
-                },
-            };
-
-            reqwest::Client::new()
-                .post(aggregator_url.join("services").unwrap())
-                .json(&req)
-                .send()
-                .await
-                .unwrap()
-                .error_for_status()
-                .unwrap();
-        }
 
         CliCommand::OperatorAddService {
             args: _,
@@ -576,14 +552,23 @@ async fn main() {
                 },
             };
 
-            reqwest::Client::new()
-                .post(wavs_url.join("services").unwrap())
+            let wavs_url = wavs_url.join("services").unwrap();
+
+            let resp = reqwest::Client::new()
+                .post(wavs_url.clone())
                 .json(&req)
                 .send()
                 .await
-                .unwrap()
-                .error_for_status()
                 .unwrap();
+
+            if !resp.status().is_success() {
+                let status = resp.status();
+                let text = resp.text().await.unwrap_or_default();
+                panic!(
+                    "Failed to add service at {}. Status: {}, Response: {}",
+                    wavs_url, status, text
+                );
+            }
         }
 
         CliCommand::OperatorDeleteService {
@@ -598,14 +583,23 @@ async fn main() {
                 }],
             };
 
-            reqwest::Client::new()
-                .delete(wavs_url.join("services").unwrap())
+            let wavs_url = wavs_url.join("services").unwrap();
+
+            let resp = reqwest::Client::new()
+                .delete(wavs_url.clone())
                 .json(&req)
                 .send()
                 .await
-                .unwrap()
-                .error_for_status()
                 .unwrap();
+
+            if !resp.status().is_success() {
+                let status = resp.status();
+                let text = resp.text().await.unwrap_or_default();
+                panic!(
+                    "Failed to delete service at {}. Status: {}, Response: {}",
+                    wavs_url, status, text
+                );
+            }
         }
         CliCommand::QueryServiceHandlerEmails {
             address,
@@ -629,6 +623,14 @@ async fn main() {
             let config = client.config().await.unwrap();
 
             println!("{:#?}\n", config);
+        }
+        CliCommand::QueryProxyState { address, args: _ } => {
+            let address = ctx.parse_address(&address).await.unwrap();
+            let client = ctx.proxy_querier(address).await.unwrap();
+
+            let state = client.state().await.unwrap();
+
+            println!("{:#?}\n", state);
         }
         CliCommand::ContractRegisterUser {
             email_address,

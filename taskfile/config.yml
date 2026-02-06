@@ -36,8 +36,8 @@ vars:
   SERVICE_CRON_SCHEDULE: "*/10 * * * * * *" # Every 10 seconds
 
   # Docker images
-  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.9{{if eq .ARCH "arm64"}}-arm64{{end}}'
-  DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.14{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS: 'ghcr.io/lay3rlabs/wavs:2.0.0-rc.12{{if eq .ARCH "arm64"}}-arm64{{end}}'
+  DOCKER_IMAGE_WAVS_CW_MIDDLEWARE: 'ghcr.io/lay3rlabs/cw-middleware:0.2.0-alpha.15{{if eq .ARCH "arm64"}}-arm64{{end}}'
   DOCKER_IMAGE_COSMWASM_OPTIMIZER: 'cosmwasm/optimizer{{if eq .ARCH "arm64"}}-arm64{{end}}:0.17.0'
   DOCKER_IMAGE_JAEGER: "jaegertracing/jaeger:2.5.0"
   DOCKER_IMAGE_PROMETHEUS: "prom/prometheus:v3.3.0"
@@ -46,7 +46,6 @@ vars:
 
   # Ports
   LOCAL_PORT_WAVS_OPERATOR_BASE: 8123 # Base port for WAVS, subsequent ports will be incremented by 1 for each instance
-  LOCAL_PORT_WAVS_AGGREGATOR: 8200
   LOCAL_PORT_IPFS_API: 8300
   LOCAL_PORT_IPFS_GATEWAY: 8301
   LOCAL_PORT_JAEGER_UI: 16686
@@ -65,7 +64,9 @@ vars:
   DEPLOY_IPFS_TARGET:
     sh: grep '^DEPLOY_IPFS_TARGET=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
   DEPLOY_CONTROL_CENTER_ADDRESS:
-    sh: grep '^DEPLOY_CONTROL_CENTER_ADDRESS=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
+    sh: grep '^DEPLOY_CONTROL_CENTER_ADDRESS=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1
+  TASK_HELPER_DEV_MODE:
+    sh: grep '^TASK_HELPER_DEV_MODE=' "$(git rev-parse --show-toplevel)/.env" | cut -d'=' -f2 | cut -d'#' -f1 | tr -d ' '
 
   CHAIN_KEY:
     sh: |
@@ -105,7 +106,7 @@ vars:
   IPFS_GATEWAY_URL:
     sh: |
       if [ "{{.DEPLOY_IPFS_TARGET}}" = "local" ]; then
-        echo "http://127.0.0.1:{{.LOCAL_PORT_IPFS_GATEWAY}}"
+        echo "http://127.0.0.1:{{.LOCAL_PORT_IPFS_GATEWAY}}/ipfs/"
       elif [ "{{.DEPLOY_IPFS_TARGET}}" = "remote" ]; then
         echo "{{.REMOTE_IPFS_GATEWAY_URL}}"
       else
@@ -113,28 +114,18 @@ vars:
         exit 1
       fi
 
-  WAVS_AGGREGATOR_URL:
-    sh: |
-      if [ "{{.DEPLOY_WAVS_TARGET}}" = "local" ]; then
-        echo "http://127.0.0.1:{{.LOCAL_PORT_WAVS_AGGREGATOR}}"
-      elif [ "{{.DEPLOY_WAVS_TARGET}}" = "remote" ]; then
-        echo "{{.REMOTE_WAVS_AGGREGATOR_URL}}"
-      else
-        echo "Error: Invalid DEPLOY_WAVS_TARGET '{{.DEPLOY_WAVS_TARGET}}'. Must be one of: local, remote" >&2
-        exit 1
-      fi
-
   ALL_MNEMONICS_TO_FUND:
     [
       "CLI_MNEMONIC",
-      "WAVS_OPERATOR_MNEMONIC_1",
-      "WAVS_OPERATOR_MNEMONIC_2",
-      "WAVS_AGGREGATOR_COSMOS_CREDENTIAL",
+      "WAVS_OPERATOR_SIGNING_MNEMONIC_1",
+      "WAVS_AGGREGATOR_COSMOS_CREDENTIAL_1",
     ]
   COMPONENT_WITS_OPERATOR_COMMANDER: ["wavs:operator@2.0.0"]
 
   # Middleware
   DEFAULT_MIDDLEWARE_SIGNER_WEIGHT: 100
+  DEFAULT_MIDDLEWARE_QUORUM_NUMERATOR: 200
+  DEFAULT_MIDDLEWARE_QUORUM_DENOMINATOR: 300
 
   # Timeouts
   TIMEOUT_HEALTH_CHECK: 30 # seconds to wait for service health checks
@@ -161,6 +152,5 @@ vars:
       if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
         echo ""
       else
-        echo "sudo"
+        echo "sudo -E"
       fi
-  # TASK_HELPER_DEV_MODE: "true" # if set, uses `cargo run` instead of the built task-helper binary

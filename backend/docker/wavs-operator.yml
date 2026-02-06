@@ -4,7 +4,8 @@ services:
     container_name: "${COMPOSE_PROJECT_NAME:-}"
     stop_signal: SIGKILL
     environment:
-      - WAVS_SUBMISSION_MNEMONIC=${WAVS_OPERATOR_MNEMONIC:-}
+      - WAVS_SIGNING_MNEMONIC=${WAVS_SIGNING_MNEMONIC:-}
+      - WAVS_AGGREGATOR_COSMOS_CREDENTIAL=${WAVS_AGGREGATOR_COSMOS_CREDENTIAL:-}
       - RUST_LOG=${WAVS_LOG_LEVEL:-}
       - WAVS_LOG_LEVEL=${WAVS_LOG_LEVEL:-}
       - WAVS_ENV_IMAP_DEBUG_CAPABILITIES=${WAVS_ENV_IMAP_DEBUG_CAPABILITIES:-}
@@ -24,8 +25,12 @@ services:
         "/wavs-home",
         "--data",
         "/var/${COMPOSE_PROJECT_NAME:-}",
+        "--host",
+        "0.0.0.0",
         "--port",
         "${COMPOSE_PORT_WAVS:-}",
+        "--ipfs-gateway",
+        "${COMPOSE_IPFS_GATEWAY_URL:-}",
       ]
     volumes:
       - "${COMPOSE_PATH_WAVS_HOME:-}:/wavs-home"

@@ -35,12 +35,12 @@ impl CliContext {
             CliCommand::UploadComponent { args, .. } => args,
             CliCommand::UploadService { args, .. } => args,
             CliCommand::AssertAccountExists { args, .. } => args,
-            CliCommand::AggregatorRegisterService { args, .. } => args,
             CliCommand::OperatorAddService { args, .. } => args,
             CliCommand::OperatorDeleteService { args, .. } => args,
             CliCommand::OperatorSetSigningKey { args, .. } => args,
             CliCommand::QueryServiceHandlerEmails { args, .. } => args,
             CliCommand::QueryProxyConfig { args, .. } => args,
+            CliCommand::QueryProxyState { args, .. } => args,
             CliCommand::ContractRegisterUser { args, .. } => args,
         }
     }
