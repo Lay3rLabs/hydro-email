@@ -1,14 +1,9 @@
-use app_contract_api::{
-    proxy::ProxyExecuteMsg,
-    service_handler::{
-        event::EmailEvent,
-        msg::{
-            AdminResponse, CustomExecuteMsg, CustomQueryMsg, EmailAddrsResponse,
-            EmailsFromResponse, EmailsResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-            UserRegistryResponse,
-        },
+use app_contract_api::service_handler::{
+    event::EmailEvent,
+    msg::{
+        AdminResponse, CustomExecuteMsg, CustomQueryMsg, EmailUserIdsResponse, EmailsFromResponse,
+        EmailsResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, UserRegistryResponse,
     },
-    user_registry::msg::UserId,
 };
 use cosmwasm_std::{
     ensure, entry_point, to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
@@ -86,13 +81,10 @@ fn handle_custom_message(
     match msg {
         CustomExecuteMsg::Email(email) => {
             let pagination_id = state::push_email(deps.storage, &email)?;
-            let user_id = UserId::new_email_address(&email.from);
-
-            let proxy_execute_msg = ProxyExecuteMsg::from_email_subject(&email.subject);
 
             let proxy_msg = CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: state::proxy_address(deps.as_ref(), user_id)?.to_string(),
-                msg: to_json_binary(&proxy_execute_msg)?,
+                contract_addr: state::proxy_address(deps.as_ref(), email.from.clone())?.to_string(),
+                msg: to_json_binary(&email.proxy_execute_msg())?,
                 funds: vec![],
             });
 
@@ -110,10 +102,10 @@ fn handle_custom_message(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Custom(msg) => match msg {
-            CustomQueryMsg::EmailAddrs { limit, start_after } => {
-                let email_addrs =
-                    state::list_email_addresses(deps.storage, start_after.as_deref(), limit)?;
-                to_json_binary(&EmailAddrsResponse { email_addrs })
+            CustomQueryMsg::EmailUserIds { limit, start_after } => {
+                let email_user_ids =
+                    state::list_email_user_ids(deps.storage, start_after.as_ref(), limit)?;
+                to_json_binary(&EmailUserIdsResponse { email_user_ids })
             }
             CustomQueryMsg::EmailsFrom {
                 from,

@@ -17,6 +17,8 @@ pub struct EmailMessage {
     pub body_text: Option<String>,
     // 5) Raw email bytes (can be parsed on demand)
     pub raw_bytes: Vec<u8>,
+    // 6) All headers as key-value pairs
+    pub headers: Vec<(String, String)>,
 }
 
 impl std::fmt::Debug for EmailMessage {
@@ -34,6 +36,7 @@ impl std::fmt::Debug for EmailMessage {
                     .unwrap_or(Cow::Borrowed("None")),
             )
             .field("raw_bytes_len", &self.raw_bytes.len())
+            .field("headers_count", &self.headers.len())
             .finish()
     }
 }
@@ -53,25 +56,40 @@ impl EmailMessage {
         Ok(parse_mail(&self.raw_bytes)?)
     }
 
-    pub fn event_id_salt(&self) -> Vec<u8> {
+    /// Try to extract the Message-ID header value
+    pub fn message_id(&self) -> Option<&str> {
+        self.headers
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case("Message-ID"))
+            .map(|(_, v)| v.as_str())
+    }
+
+    /// Try to extract the Date header value
+    pub fn date(&self) -> Option<&str> {
+        self.headers
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case("Date"))
+            .map(|(_, v)| v.as_str())
+    }
+
+    pub fn event_id_salt(&self) -> anyhow::Result<Vec<u8>> {
+        let unique_id = self
+            .message_id()
+            .or_else(|| self.date())
+            .ok_or_else(|| anyhow::anyhow!("Email must have either Message-ID or Date header"))?;
+
+        let subject = self
+            .subject
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Email must have a Subject header"))?;
+
         let mut hasher = Sha256::new();
+
+        hasher.update(unique_id);
         hasher.update(&self.original_sender);
-        let mut dkim_signatures = self.dkim_signatures.clone();
-        dkim_signatures.sort();
+        hasher.update(subject);
 
-        for sig in &dkim_signatures {
-            hasher.update(sig);
-        }
-
-        if let Some(subject) = &self.subject {
-            hasher.update(subject);
-        }
-
-        if let Some(body) = &self.body_text {
-            hasher.update(body);
-        }
-
-        hasher.finalize().to_vec()
+        Ok(hasher.finalize().to_vec())
     }
 }
 
@@ -123,11 +141,19 @@ fn parse_any(body_bytes: &[u8], f: Option<&Fetch>) -> anyhow::Result<EmailMessag
     // prefer text/plain part; fall back to html text
     let body_text = msg.get_body().ok();
 
+    // collect all headers as key-value pairs
+    let headers = msg
+        .headers
+        .iter()
+        .map(|h| (h.get_key().to_string(), h.get_value()))
+        .collect();
+
     Ok(EmailMessage {
         subject: subject.map(|s| s.to_string()),
         original_sender: original_sender.to_string(),
         dkim_signatures: dkim_signatures.into_iter().map(|s| s.to_string()).collect(),
         body_text: body_text.map(|s| s.to_string()),
         raw_bytes: body_bytes.to_vec(),
+        headers,
     })
 }

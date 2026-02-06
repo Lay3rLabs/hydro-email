@@ -57,6 +57,10 @@ impl UserId {
 
         Self(const_hex::encode(hasher.finalize()))
     }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 fn extract_email(input: &str) -> Option<String> {

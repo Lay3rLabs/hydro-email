@@ -1,5 +1,5 @@
 use app_contract_api::{
-    service_handler::msg::{Auth, Email, EmailMessageOnly, InstantiateMsg},
+    service_handler::msg::{Auth, EmailMessageOnly, InstantiateMsg, UserIdEmail},
     user_registry::msg::{ProxyAddressResponse, QueryMsg as UserRegistryQueryMsg, UserId},
 };
 use cosmwasm_std::{Addr, Deps, DepsMut, Order, StdResult, Storage};
@@ -17,8 +17,8 @@ pub const ADMIN: Item<Addr> = Item::new("admin");
 const USER_REGISTRY_ADDRESS: Item<Addr> = Item::new("user-registry-address");
 
 const EMAILS_FROM: Map<(&str, u64), EmailMessageOnly> = Map::new("emails-from");
-const EMAILS_IN_ORDER: Map<u64, Email> = Map::new("emails-in-order");
-const EMAIL_ADDRESSES: Map<&str, ()> = Map::new("email-addresses");
+const EMAILS_IN_ORDER: Map<u64, UserIdEmail> = Map::new("emails-in-order");
+const EMAIL_USER_IDS: Map<&str, ()> = Map::new("email-user-ids");
 const EMAIL_PAGINATION_ID_COUNT: Item<u64> = Item::new("email-pagination-id-count");
 
 pub fn initialize(deps: &mut DepsMut, msg: InstantiateMsg) -> StdResult<()> {
@@ -57,25 +57,29 @@ pub fn proxy_address(deps: Deps, user_id: UserId) -> StdResult<Addr> {
     Ok(resp.address)
 }
 
-pub fn push_email(store: &mut dyn Storage, email: &Email) -> StdResult<u64> {
+pub fn push_email(store: &mut dyn Storage, email: &UserIdEmail) -> StdResult<u64> {
     let pagination_id =
         EMAIL_PAGINATION_ID_COUNT.update(store, |id| -> StdResult<u64> { Ok(id + 1) })?;
 
-    EMAILS_FROM.save(store, (&email.from, pagination_id), &email.into())?;
+    EMAILS_FROM.save(
+        store,
+        (&email.from.to_string(), pagination_id),
+        &email.into(),
+    )?;
     EMAILS_IN_ORDER.save(store, pagination_id, email)?;
-    EMAIL_ADDRESSES.save(store, &email.from, &())?;
+    EMAIL_USER_IDS.save(store, &email.from.to_string(), &())?;
 
     Ok(pagination_id)
 }
 
-pub fn list_email_addresses(
+pub fn list_email_user_ids(
     store: &dyn Storage,
-    start_after: Option<&str>,
+    start_after: Option<&UserId>,
     limit: Option<u32>,
-) -> StdResult<Vec<String>> {
-    let iter = EMAIL_ADDRESSES.range(
+) -> StdResult<Vec<UserId>> {
+    let iter = EMAIL_USER_IDS.range(
         store,
-        start_after.map(Bound::exclusive),
+        start_after.map(|x| Bound::exclusive(x.as_str())),
         None,
         Order::Ascending,
     );
@@ -84,8 +88,8 @@ pub fn list_email_addresses(
 
     let addrs = iter
         .take(take_limit)
-        .map(|item| item.map(|(addr, _)| addr.to_string()))
-        .collect::<StdResult<Vec<String>>>()?;
+        .map(|item| item.map(|(addr, _)| UserId::new_raw(addr.to_string())))
+        .collect::<StdResult<Vec<UserId>>>()?;
 
     Ok(addrs)
 }
@@ -117,7 +121,7 @@ pub fn list_emails(
     store: &dyn Storage,
     start_after: Option<u64>,
     limit: Option<u32>,
-) -> StdResult<Vec<(Email, u64)>> {
+) -> StdResult<Vec<(UserIdEmail, u64)>> {
     let iter = EMAILS_IN_ORDER.range(
         store,
         start_after.map(Bound::exclusive),
@@ -130,7 +134,7 @@ pub fn list_emails(
     let emails = iter
         .take(take_limit)
         .map(|item| item.map(|(id, email)| (email, id)))
-        .collect::<StdResult<Vec<(Email, u64)>>>()?;
+        .collect::<StdResult<Vec<(UserIdEmail, u64)>>>()?;
 
     Ok(emails)
 }

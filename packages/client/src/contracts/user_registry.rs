@@ -47,8 +47,7 @@ impl UserRegistryQuerier {
         self.inner.contract_query(&self.addr, msg).await
     }
 
-    pub async fn proxy_address_email(&self, email: &str) -> Result<AnyAddr> {
-        let user_id = UserId::new_email_address(email);
+    pub async fn proxy_address_user_id(&self, user_id: UserId) -> Result<AnyAddr> {
         let resp: ProxyAddressResponse = self.query(&QueryMsg::ProxyAddress { user_id }).await?;
 
         Ok(AnyAddr::from(resp.address))
@@ -73,13 +72,11 @@ impl UserRegistryExecutor {
         self.inner.contract_exec(&self.addr, msg, funds).await
     }
 
-    pub async fn register_user_email(
+    pub async fn register_user_id(
         &self,
-        email: &str,
+        user_id: UserId,
         proxy_address: AnyAddr,
     ) -> Result<(AnyTxResponse, UserId)> {
-        let user_id = UserId::new_email_address(email);
-
         let msg = ExecuteMsg::RegisterUser {
             user_id: user_id.clone(),
             proxy_address: proxy_address.to_string(),

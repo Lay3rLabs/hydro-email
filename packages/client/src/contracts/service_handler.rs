@@ -11,9 +11,12 @@ use crate::{
     querier::AnyQuerier,
 };
 
-use app_contract_api::service_handler::msg::{
-    AdminResponse, CustomExecuteMsg, CustomQueryMsg, Email, EmailAddrsResponse, ExecuteMsg,
-    QueryMsg, UserRegistryResponse,
+use app_contract_api::{
+    service_handler::msg::{
+        AdminResponse, CustomExecuteMsg, CustomQueryMsg, EmailUserIdsResponse, ExecuteMsg,
+        QueryMsg, UserIdEmail, UserRegistryResponse,
+    },
+    user_registry::msg::UserId,
 };
 
 #[derive(Clone)]
@@ -66,12 +69,12 @@ impl ServiceHandlerQuerier {
         Ok(resp.admin)
     }
 
-    pub async fn all_email_addresses(&self) -> Result<Vec<String>> {
+    pub async fn all_email_user_ids(&self) -> Result<Vec<UserId>> {
         let mut emails = Vec::new();
-        let mut start_after: Option<String> = None;
+        let mut start_after: Option<UserId> = None;
 
         loop {
-            let batch = self.email_addresses(Some(100), start_after.clone()).await?;
+            let batch = self.email_user_ids(Some(100), start_after.clone()).await?;
 
             if batch.is_empty() {
                 break;
@@ -86,7 +89,7 @@ impl ServiceHandlerQuerier {
 
     pub async fn all_emails_from(
         &self,
-        from: &str,
+        from: &UserId,
     ) -> Result<
         Vec<(
             app_contract_api::service_handler::msg::EmailMessageOnly,
@@ -112,7 +115,7 @@ impl ServiceHandlerQuerier {
 
     pub async fn all_emails(
         &self,
-    ) -> Result<Vec<(app_contract_api::service_handler::msg::Email, u64)>> {
+    ) -> Result<Vec<(app_contract_api::service_handler::msg::UserIdEmail, u64)>> {
         let mut emails = Vec::new();
         let mut start_after: Option<u64> = None;
 
@@ -130,24 +133,24 @@ impl ServiceHandlerQuerier {
         Ok(emails)
     }
 
-    pub async fn email_addresses(
+    pub async fn email_user_ids(
         &self,
         limit: Option<u32>,
-        start_after: Option<String>,
-    ) -> Result<Vec<String>> {
-        let resp: EmailAddrsResponse = self
-            .query(&QueryMsg::Custom(CustomQueryMsg::EmailAddrs {
+        start_after: Option<UserId>,
+    ) -> Result<Vec<UserId>> {
+        let resp: EmailUserIdsResponse = self
+            .query(&QueryMsg::Custom(CustomQueryMsg::EmailUserIds {
                 limit,
                 start_after,
             }))
             .await?;
 
-        Ok(resp.email_addrs)
+        Ok(resp.email_user_ids)
     }
 
     pub async fn emails_from(
         &self,
-        from: &str,
+        from: &UserId,
         limit: Option<u32>,
         start_after: Option<u64>,
     ) -> Result<
@@ -171,7 +174,7 @@ impl ServiceHandlerQuerier {
         &self,
         limit: Option<u32>,
         start_after: Option<u64>,
-    ) -> Result<Vec<(app_contract_api::service_handler::msg::Email, u64)>> {
+    ) -> Result<Vec<(app_contract_api::service_handler::msg::UserIdEmail, u64)>> {
         let resp: app_contract_api::service_handler::msg::EmailsResponse = self
             .query(&QueryMsg::Custom(CustomQueryMsg::Emails {
                 limit,
@@ -200,7 +203,7 @@ impl ServiceHandlerExecutor {
         self.inner.contract_exec(&self.addr, msg, funds).await
     }
 
-    pub async fn push_email(&self, email: Email) -> Result<AnyTxResponse> {
+    pub async fn push_email(&self, email: UserIdEmail) -> Result<AnyTxResponse> {
         self.exec(&ExecuteMsg::Custom(CustomExecuteMsg::Email(email)), &[])
             .await
     }

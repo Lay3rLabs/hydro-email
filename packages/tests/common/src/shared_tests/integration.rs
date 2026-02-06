@@ -2,7 +2,7 @@ use app_client::contracts::{
     proxy::ProxyContract, service_handler::ServiceHandlerContract,
     user_registry::UserRegistryContract,
 };
-use app_contract_api::service_handler::msg::Email;
+use app_contract_api::{service_handler::msg::UserIdEmail, user_registry::msg::UserId};
 use hydro_proxy::state::{ActionState, State};
 
 pub async fn test_integration(
@@ -24,35 +24,35 @@ pub async fn test_integration(
             .unwrap(),
     );
 
-    let email = Email {
-        from: "alice@example.com".to_string(),
+    let email = UserIdEmail {
+        from: UserId::new_email_address("alice@example.com"),
         subject: "hello world!".to_string(),
     };
 
     // An email from a different user to verify we get the right proxy address
-    let not_this_email = Email {
-        from: "bob@example.com".to_string(),
+    let not_this_email = UserIdEmail {
+        from: UserId::new_email_address("bob@example.com"),
         subject: "hello world!".to_string(),
     };
 
     // no proxy address yet
     user_registry
         .querier
-        .proxy_address_email(&email.from)
+        .proxy_address_user_id(email.from.clone())
         .await
         .unwrap_err();
 
     // register the user's proxy address
     user_registry
         .executor
-        .register_user_email(&email.from, proxy.address.clone())
+        .register_user_id(email.from.clone(), proxy.address.clone())
         .await
         .unwrap();
 
     // register a different user's proxy address to verify we get the right one
     user_registry
         .executor
-        .register_user_email(&not_this_email.from, wrong_proxy.address.clone())
+        .register_user_id(not_this_email.from.clone(), wrong_proxy.address.clone())
         .await
         .unwrap();
 
@@ -60,7 +60,7 @@ pub async fn test_integration(
     assert_eq!(
         user_registry
             .querier
-            .proxy_address_email(&email.from)
+            .proxy_address_user_id(email.from.clone())
             .await
             .unwrap(),
         proxy.address
