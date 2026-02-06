@@ -1,10 +1,10 @@
 use cosmwasm_schema::cw_serde;
 
-use crate::service_handler::msg::Email;
+use crate::{service_handler::msg::UserIdEmail, user_registry::msg::UserId};
 
 #[cw_serde]
 pub struct EmailEvent {
-    pub email: Email,
+    pub email: UserIdEmail,
     pub pagination_id: u64,
 }
 
@@ -18,7 +18,10 @@ impl EmailEvent {
 impl From<EmailEvent> for cosmwasm_std::Event {
     fn from(src: EmailEvent) -> Self {
         cosmwasm_std::Event::new(EmailEvent::EVENT_TYPE)
-            .add_attribute(EmailEvent::EVENT_ATTR_KEY_EMAIL_FROM, src.email.from)
+            .add_attribute(
+                EmailEvent::EVENT_ATTR_KEY_EMAIL_FROM,
+                src.email.from.to_string(),
+            )
             .add_attribute(EmailEvent::EVENT_ATTR_KEY_EMAIL_SUBJECT, src.email.subject)
             .add_attribute(
                 EmailEvent::EVENT_ATTR_KEY_PAGINATION_ID,
@@ -45,7 +48,9 @@ impl TryFrom<&cosmwasm_std::Event> for EmailEvent {
 
         for attr in event.attributes.iter() {
             match attr.key.as_str() {
-                Self::EVENT_ATTR_KEY_EMAIL_FROM => email_from = Some(attr.value.to_string()),
+                Self::EVENT_ATTR_KEY_EMAIL_FROM => {
+                    email_from = Some(UserId::new_raw(attr.value.to_string()))
+                }
                 Self::EVENT_ATTR_KEY_EMAIL_SUBJECT => email_subject = Some(attr.value.to_string()),
                 Self::EVENT_ATTR_KEY_PAGINATION_ID => {
                     pagination_id = Some(attr.value.parse::<u64>()?)
@@ -56,7 +61,7 @@ impl TryFrom<&cosmwasm_std::Event> for EmailEvent {
 
         match (email_from, email_subject, pagination_id) {
             (Some(from), Some(subject), Some(id)) => Ok(Self {
-                email: Email { from, subject },
+                email: UserIdEmail { from, subject },
                 pagination_id: id,
             }),
             (from, subject, id) => {

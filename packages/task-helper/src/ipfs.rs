@@ -146,7 +146,7 @@ impl IpfsFile {
 
         // Direct file upload - the CID points directly to the file content
         let uri = format!("ipfs://{}", cid);
-        let gateway_url = format!("{}/ipfs/{}", gateway_base, cid);
+        let gateway_url = format!("{}/{}", gateway_base, cid);
 
         Ok(Self {
             cid,

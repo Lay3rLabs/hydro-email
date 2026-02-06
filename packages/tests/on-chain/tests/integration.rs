@@ -1,5 +1,5 @@
 use app_client::executor::SigningClientWrapper;
-use app_contract_api::service_handler::msg::Email;
+use app_contract_api::{service_handler::msg::UserIdEmail, user_registry::msg::UserId};
 use app_tests_common::shared_tests::integration::test_integration;
 use app_utils::tracing::{env_init, tracing_init};
 use cosmwasm_std::Uint128;
@@ -92,8 +92,8 @@ async fn integration() {
 async fn deposit_and_withdraw() {
     let setup = setup().await;
 
-    let email = Email {
-        from: "depositor@example.com".to_string(),
+    let email = UserIdEmail {
+        from: UserId::new_email_address("depositor@example.com"),
         subject: "deposit".to_string(),
     };
 
@@ -101,7 +101,7 @@ async fn deposit_and_withdraw() {
     setup
         .user_registry
         .executor
-        .register_user_email(&email.from, setup.proxy.address.clone().into())
+        .register_user_id(email.from.clone(), setup.proxy.address.clone().into())
         .await
         .unwrap();
 
@@ -164,8 +164,8 @@ async fn deposit_and_withdraw() {
 
     // Now test withdrawal - send email with withdraw command
     let recipient_addr = setup.client.addr.to_string();
-    let withdraw_email = Email {
-        from: "depositor@example.com".to_string(),
+    let withdraw_email = UserIdEmail {
+        from: UserId::new_email_address("depositor@example.com"),
         subject: format!(
             "withdraw {} {} {}",
             recipient_addr, shares_denom, proxy_shares

@@ -7,6 +7,7 @@ mod output;
 use std::process::exit;
 
 use app_client::contracts::user_registry::UserRegistryContract;
+use app_contract_api::user_registry::msg::UserId;
 use app_utils::{faucet, tracing::tracing_init};
 use cosmwasm_std::Uint256;
 use layer_climb::prelude::EvmAddr;
@@ -650,9 +651,11 @@ async fn main() {
                 user_registry_address.into(),
             );
 
+            let user_id = UserId::new_email_address(&email_address);
+
             let (tx_resp, user_id) = contract
                 .executor
-                .register_user_email(&email_address, proxy_address.clone().into())
+                .register_user_id(user_id, proxy_address.clone().into())
                 .await
                 .unwrap();
 

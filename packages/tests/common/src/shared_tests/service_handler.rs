@@ -1,5 +1,5 @@
 use app_client::contracts::service_handler::{ServiceHandlerContract, ServiceHandlerQuerier};
-use app_contract_api::service_handler::{event::EmailEvent, msg::Email};
+use app_contract_api::service_handler::{event::EmailEvent, msg::UserIdEmail};
 use layer_climb::events::CosmosTxEvents;
 
 pub async fn get_admin(querier: &ServiceHandlerQuerier, expected: &str) {
@@ -7,7 +7,7 @@ pub async fn get_admin(querier: &ServiceHandlerQuerier, expected: &str) {
     assert_eq!(admin, expected);
 }
 
-pub async fn push_email(service_handler: impl Into<ServiceHandlerContract>, email: Email) {
+pub async fn push_email(service_handler: impl Into<ServiceHandlerContract>, email: UserIdEmail) {
     let ServiceHandlerContract {
         querier, executor, ..
     } = service_handler.into();

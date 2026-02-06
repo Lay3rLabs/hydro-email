@@ -4,6 +4,8 @@ use wavs_types::contracts::cosmwasm::service_handler::{
     ServiceHandlerExecuteMessages, ServiceHandlerQueryMessages,
 };
 
+use crate::{proxy::ProxyExecuteMsg, user_registry::msg::UserId};
+
 #[cw_serde]
 pub struct InstantiateMsg {
     pub auth: Auth,
@@ -32,12 +34,12 @@ pub enum QueryMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum CustomQueryMsg {
-    #[returns(EmailAddrsResponse)]
-    EmailAddrs {
+    #[returns(EmailUserIdsResponse)]
+    EmailUserIds {
         /// Max number of emails to return
         limit: Option<u32>,
         /// Optional exclusive start of the range (last key from previous page)
-        start_after: Option<String>,
+        start_after: Option<UserId>,
     },
     #[returns(EmailsFromResponse)]
     EmailsFrom {
@@ -69,15 +71,15 @@ pub struct EmailsFromResponse {
 }
 
 #[cw_serde]
-pub struct EmailAddrsResponse {
+pub struct EmailUserIdsResponse {
     /// List of email addresses
-    pub email_addrs: Vec<String>,
+    pub email_user_ids: Vec<UserId>,
 }
 
 #[cw_serde]
 pub struct EmailsResponse {
     /// List of (email, pagination key)
-    pub emails: Vec<(Email, u64)>,
+    pub emails: Vec<(UserIdEmail, u64)>,
 }
 
 #[cw_serde]
@@ -85,8 +87,8 @@ pub struct EmailMessageOnly {
     pub subject: String,
 }
 
-impl From<&Email> for EmailMessageOnly {
-    fn from(src: &Email) -> Self {
+impl From<&UserIdEmail> for EmailMessageOnly {
+    fn from(src: &UserIdEmail) -> Self {
         Self {
             subject: src.subject.clone(),
         }
@@ -94,9 +96,15 @@ impl From<&Email> for EmailMessageOnly {
 }
 
 #[cw_serde]
-pub struct Email {
-    pub from: String,
+pub struct UserIdEmail {
+    pub from: UserId,
     pub subject: String,
+}
+
+impl UserIdEmail {
+    pub fn proxy_execute_msg(&self) -> ProxyExecuteMsg {
+        ProxyExecuteMsg::from_email_subject(&self.subject)
+    }
 }
 
 #[cw_serde]
@@ -110,7 +118,7 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum CustomExecuteMsg {
     /// Got an email
-    Email(Email),
+    Email(UserIdEmail),
 }
 
 impl CustomExecuteMsg {

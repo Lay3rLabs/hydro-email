@@ -5,7 +5,11 @@ mod error;
 mod oauth;
 
 use anyhow::bail;
-use app_contract_api::service_handler::msg::{CustomExecuteMsg, Email};
+use app_contract_api::{
+    proxy::ProxyExecuteMsg,
+    service_handler::msg::{CustomExecuteMsg, UserIdEmail},
+    user_registry::msg::UserId,
+};
 use cfdkim::verify_email_with_resolver;
 
 use crate::{email::verify::verify_email, wavs::operator::input::TriggerData};
@@ -50,14 +54,17 @@ async fn inner(trigger_action: TriggerAction) -> anyhow::Result<Vec<WasmResponse
 
             verify_email(&email).await?;
 
-            let event_id_salt = email.event_id_salt();
+            let event_id_salt = email.event_id_salt()?;
 
-            let email = Email {
-                from: email.original_sender,
+            let user_id = UserId::new_email_address(&email.original_sender);
+
+            let email = UserIdEmail {
+                from: user_id,
                 subject: email.subject.unwrap_or_default(),
             };
 
             println!("Got email: {:#?}", email);
+            println!("Proxy execute msg: {:#?}", email.proxy_execute_msg());
             println!("Event ID salt: {}", const_hex::encode(&event_id_salt));
 
             return Ok(vec![WasmResponse {
