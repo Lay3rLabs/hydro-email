@@ -17,6 +17,18 @@ task deploy:user
 
 ## Make sure each backend service is running (per-node)
 
+Note that you'll need to make sure the `.env` is setup for the remote node so it gets the right ipfs gateway url
+
+.env
+```
+DEPLOY_CHAIN_TARGET="mainnet"
+DEPLOY_WAVS_TARGET="remote"
+DEPLOY_IPFS_TARGET="remote"
+REMOTE_IPFS_GATEWAY_URL="<your ipfs gateway url>"
+```
+
+Then, for each node:
+
 ```
 task backend:start-wavs
 ```
