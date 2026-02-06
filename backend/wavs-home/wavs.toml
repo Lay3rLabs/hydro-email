@@ -26,6 +26,7 @@ gas_price = 0.025
 gas_denom = "untrn"
 
 [wavs]
+dev_endpoints_enabled = true
 
 [wavs.p2p.remote]
 listen_port = 9000

@@ -365,7 +365,8 @@ tasks:
       WAVS_URL:
         sh: task backend:get-wavs-url-{{.WAVS_INSTANCE}}
     cmds:
-      - echo "Adding service to operator {{.WAVS_INSTANCE}}..."
+      - |
+        echo "Adding service to operator {{.WAVS_INSTANCE}} at endpoint {{.WAVS_URL}}"
       - >
         task helper-exec -- operator-add-service
         --wavs-url {{.WAVS_URL}}

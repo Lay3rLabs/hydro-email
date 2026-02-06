@@ -148,6 +148,7 @@ tasks:
         sh: task backend:get-wavs-operator-signing-mnemonic-{{.WAVS_INSTANCE}}
       WAVS_AGGREGATOR_COSMOS_CREDENTIAL:
         sh: task backend:get-wavs-aggregator-cosmos-credential-{{.WAVS_INSTANCE}}
+      COMPOSE_IPFS_GATEWAY_URL: "{{.IPFS_GATEWAY_URL}}"
     cmds:
       - |
         echo "Starting WAVS #{{.WAVS_INSTANCE}} on port $COMPOSE_PORT_WAVS"
