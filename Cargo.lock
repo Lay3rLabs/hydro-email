@@ -6536,9 +6536,9 @@ dependencies = [
 
 [[package]]
 name = "wavs-types"
-version = "2.0.0-rc.11"
+version = "2.0.0-rc.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f57d48f762f3034c06ea37c6af53bd4a5a3e9c41eebdaa06b970376b73f92e4c"
+checksum = "5173e01d22cc7c14e7d3e75c8a215fdf9cc7390dc3daa5b25672553716254a66"
 dependencies = [
  "alloy-primitives",
  "alloy-rpc-types-eth",

@@ -552,14 +552,23 @@ async fn main() {
                 },
             };
 
-            reqwest::Client::new()
-                .post(wavs_url.join("services").unwrap())
+            let wavs_url = wavs_url.join("services").unwrap();
+
+            let resp = reqwest::Client::new()
+                .post(wavs_url.clone())
                 .json(&req)
                 .send()
                 .await
-                .unwrap()
-                .error_for_status()
                 .unwrap();
+
+            if !resp.status().is_success() {
+                let status = resp.status();
+                let text = resp.text().await.unwrap_or_default();
+                panic!(
+                    "Failed to add service at {}. Status: {}, Response: {}",
+                    wavs_url, status, text
+                );
+            }
         }
 
         CliCommand::OperatorDeleteService {
@@ -574,14 +583,23 @@ async fn main() {
                 }],
             };
 
-            reqwest::Client::new()
-                .delete(wavs_url.join("services").unwrap())
+            let wavs_url = wavs_url.join("services").unwrap();
+
+            let resp = reqwest::Client::new()
+                .delete(wavs_url.clone())
                 .json(&req)
                 .send()
                 .await
-                .unwrap()
-                .error_for_status()
                 .unwrap();
+
+            if !resp.status().is_success() {
+                let status = resp.status();
+                let text = resp.text().await.unwrap_or_default();
+                panic!(
+                    "Failed to delete service at {}. Status: {}, Response: {}",
+                    wavs_url, status, text
+                );
+            }
         }
         CliCommand::QueryServiceHandlerEmails {
             address,
